@@ -1,5 +1,8 @@
 const bootstrapSassAbstractsImports = require('vue-cli-plugin-bootstrap-vue/sassAbstractsImports.js')
 module.exports = {
+  publicPath: process.env.NODE_ENV === 'production'
+  ? '/image2dmc/'
+  : '/',
   css: {
     loaderOptions: {
       sass: {
@@ -9,8 +12,5 @@ module.exports = {
         additionalData: [...bootstrapSassAbstractsImports, ''].join(';\n')
       }
     }
-  },
-  publicPath: process.env.NODE_ENV === 'production'
-    ? '/image2dmc/'
-    : '/'
+  }
 }
