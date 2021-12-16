@@ -1,7 +1,8 @@
 .DS_Store
 node_modules
 /dist
-
+/data/img
+/data/~*
 
 # local env files
 .env.local
