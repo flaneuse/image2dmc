@@ -1,6 +1,8 @@
 <template>
 <div class="m-5">
-  <h1>Hi, Nano!</h1>
+  <h1>Happy Christmas, Mom!</h1>
+
+  <canvas id="preview"></canvas>
 
   <!-- input options -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-center">
@@ -103,6 +105,7 @@ export default {
       imageWidth: 80,
       imageHeight: 80,
       matchedColors: [],
+      rgbPrecision: 50,
       matchProgress: 0,
       isMatching: false,
       fileLoaded: false,
@@ -114,6 +117,21 @@ export default {
   computed: {
     filteredMatches() {
       return (this.matchedColors.slice(0, this.numMatches))
+    }
+  },
+  watch: {
+    roundedRGBA: function() {
+      // plot rounded version
+      if (this.roundedRGBA.length) {
+        var canvas = document.getElementById('preview'); // load context of canvas
+        canvas.width = this.imageWidth;
+        canvas.height = this.imageHeight;
+        var ctx = canvas.getContext('2d'); // load context of canvas
+        var img = this.roundedRGBA.map(d => d.split(",")).flatMap(d => d).map((d,i) => (i+1) % 4 === 0 ? 255 : +d);
+
+        var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
+        ctx.putImageData(palette, 0, 0);
+      }
     }
   },
   mounted() {
@@ -169,8 +187,8 @@ export default {
     roundRGBA(arr) {
       return (`${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`)
     },
-    round(value, precision = 5) {
-      return Math.ceil(value / precision) * precision;
+    round(value) {
+      return Math.ceil(value / this.rgbPrecision) * this.rgbPrecision;
     },
     calcDist(color) {
       DMC.forEach(d => {
