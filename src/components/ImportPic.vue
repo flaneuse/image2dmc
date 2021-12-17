@@ -2,8 +2,6 @@
 <div class="m-5">
   <h1>Happy Christmas, Mom!</h1>
 
-  <canvas id="preview"></canvas>
-
   <!-- input options -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-center">
     <!-- select file -->
@@ -11,7 +9,7 @@
 
     <template v-if="fileLoaded">
       <!-- number of colors -->
-      <div class="input-num-colors mr-5 d-flex align-items-center">
+      <div id="input-num-colors mr-5 d-flex align-items-center">
         <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
         <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
       </div>
@@ -30,10 +28,28 @@
     </div>
   </div>
 
-  <!-- image preview -->
-  <div id="image-preview">
-    <h6>original image</h6>
-    <canvas id="canvas"></canvas>
+  <!-- image previews -->
+  <div id="image-previews" class="d-flex flex-wrap">
+    <div id="original-preview">
+      <h5>original image</h5>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="average-preview" class="ml-2">
+      <h5>simplified image</h5>
+      <canvas id="preview"></canvas>
+
+      <!-- change amount of averaging -->
+      <div id="input-degree-avg mr-5 d-flex align-items-center">
+        <label for="num-colors" class="flex-shrink-0 mr-2 mb-n2">Amount of simplifcation</label>
+
+        <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
+        <div class="d-flex justify-content-between mt-n2">
+          <span>none</span>
+          <span>max</span>
+        </div>
+      </div>
+    </div>
   </div>
 
 
@@ -111,6 +127,7 @@ export default {
       fileLoaded: false,
       numMatches: 10,
       roundedRGBA: [],
+      imageRaw: null,
       imagePixels: [],
       matchedColors: [],
       imageDMC: []
@@ -129,7 +146,7 @@ export default {
         canvas.width = this.imageWidth;
         canvas.height = this.imageHeight;
         var ctx = canvas.getContext('2d'); // load context of canvas
-        var img = this.roundedRGBA.map(d => d.split(",")).flatMap(d => d).map((d,i) => (i+1) % 4 === 0 ? 255 : +d);
+        var img = this.roundedRGBA.map(d => d.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
 
         var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
         ctx.putImageData(palette, 0, 0);
@@ -163,25 +180,9 @@ export default {
         canvas.height = this.imageHeight;
 
         ctx.drawImage(img, 0, 0, this.imageWidth, this.imageHeight); // draw the image to the canvas
-        let imgData = ctx.getImageData(0, 0, this.imageWidth, this.imageHeight);
+        this.imageRaw = ctx.getImageData(0, 0, this.imageWidth, this.imageHeight);
 
-        // split into RGBA values
-        let pixels = chunk(imgData.data, 4);
-
-        // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
-        this.roundedRGBA = pixels.map(d => this.roundRGBA(d));
-
-        // count the number of occurrences of RGBA values, to reduce to single values to compare.
-        let chunkCount = countBy(this.roundedRGBA);
-
-        // convert from an object to an array
-        this.imagePixels = Object.keys(chunkCount).map(key => ({
-          id: key,
-          count: chunkCount[key]
-        }));
-
-        // sort high to low
-        this.imagePixels.sort((a, b) => b.count - a.count);
+        this.simplifyImage();
 
         console.log(this.imagePixels)
 
@@ -204,6 +205,25 @@ export default {
 
       const closestColor = DMC[0];
       return (closestColor)
+    },
+    simplifyImage() {
+      // split into RGBA values
+      let pixels = chunk(this.imageRaw.data, 4);
+
+      // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
+      this.roundedRGBA = pixels.map(d => this.roundRGBA(d));
+
+      // count the number of occurrences of RGBA values, to reduce to single values to compare.
+      let chunkCount = countBy(this.roundedRGBA);
+
+      // convert from an object to an array
+      this.imagePixels = Object.keys(chunkCount).map(key => ({
+        id: key,
+        count: chunkCount[key]
+      }));
+
+      // sort high to low
+      this.imagePixels.sort((a, b) => b.count - a.count);
     },
     matchColors() {
       this.isMatching = true;
