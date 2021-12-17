@@ -91,6 +91,7 @@ import {
 } from "chroma-js";
 import chroma from 'chroma-js';
 import DMC from "@/assets/dmc_colors.json";
+// import DMC from "@/assets/dmc_colors_ldh.json";
 import chunk from "lodash/chunk";
 import sumBy from "lodash/sumBy";
 import countBy from "lodash/countBy";
@@ -104,14 +105,15 @@ export default {
     return {
       imageWidth: 80,
       imageHeight: 80,
-      matchedColors: [],
-      rgbPrecision: 50,
+      rgbPrecision: 5,
       matchProgress: 0,
       isMatching: false,
       fileLoaded: false,
       numMatches: 10,
       roundedRGBA: [],
-      imagePixels: []
+      imagePixels: [],
+      matchedColors: [],
+      imageDMC: []
     }
   },
   computed: {
@@ -136,6 +138,7 @@ export default {
   },
   mounted() {
     DMC.forEach(d => {
+      // d["color"] = chroma(d.hex);
       d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
       d["hex"] = d.color.hex();
     })
@@ -180,6 +183,8 @@ export default {
         // sort high to low
         this.imagePixels.sort((a, b) => b.count - a.count);
 
+        console.log(this.imagePixels)
+
         // allow color matching to happen
         this.fileLoaded = true;
       }
@@ -203,7 +208,7 @@ export default {
     matchColors() {
       this.isMatching = true;
 
-      const imgDMC = this.imagePixels.map((d, i) => {
+      this.imageDMC = this.imagePixels.map((d, i) => {
         this.matchProgress = i / this.imagePixels.length;
 
         if (i % 1000 === 0) {
@@ -218,13 +223,13 @@ export default {
         obj["pixel_count"] = d.count;
         obj["closest_hex"] = closest.hex;
         obj["closest_name"] = closest.name;
-        obj["closest_dmc_id"] = closest.floss;
+        obj["closest_dmc_id"] = closest.dmc_id;
         obj["closest_score"] = closest.dist;
         return obj;
       })
 
       // sum number of occurrences of the DMC color
-      this.matchedColors = _(imgDMC).groupBy("closest_dmc_id")
+      this.matchedColors = _(this.imageDMC).groupBy("closest_dmc_id")
         .map((values, i) => ({
           values: values,
           dmc_id: values[0]["closest_dmc_id"],
@@ -238,7 +243,6 @@ export default {
 
       // sort descendingly by count
       this.matchedColors.sort((a, b) => b.count - a.count);
-      console.log(this.matchedColors)
     }
   }
 }
