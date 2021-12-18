@@ -8,12 +8,12 @@
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
     <!-- select file -->
     <div class="d-flex flex-column align-items-start">
-      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">1 Select file</span>
+      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">1 Select file</span>
       <b-form-file type="file" id="file" accept="image/*" @change="loadFile"/>
     </div>
 
     <div class="d-flex flex-column align-items-start" v-if="fileLoaded">
-      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">2 Adjust simplification</span>
+      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">2 Adjust simplification</span>
       <div class="d-flex align-items-start">
       <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
       <!-- change amount of averaging -->
@@ -37,7 +37,7 @@
 
 
     <div v-if="fileLoaded" class="d-flex flex-column align-items-start">
-      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">3 Match colors</span>
+      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">3 Match colors</span>
       <div class="d-flex">
         <!-- execute -->
         <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
@@ -46,7 +46,7 @@
         <div class="ml-3 w-400px">
           <div class="d-flex flex-column arrange-items-center">
             <small class="text-muted">Percent matched</small>
-            <b-progress max="1" height="1.25rem" show-progress :animated="matchProgress < 1">
+            <b-progress max="1" height="1.25rem" show-progress variant="info" :animated="matchProgress < 1">
               <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
             </b-progress>
           </div>
