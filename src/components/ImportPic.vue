@@ -207,7 +207,8 @@ export default {
         canvas.width = this.imageWidth;
         canvas.height = this.imageHeight;
         var ctx = canvas.getContext('2d'); // load context of canvas
-        var img = this.simplifiedImage.map(d => d.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
+        console.log(this.simplifiedImage)
+        var img = this.simplifiedImage.map(d => d.rgba.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
 
         var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
         ctx.putImageData(palette, 0, 0);
@@ -249,8 +250,8 @@ export default {
         this.fileLoaded = true;
       }
     },
-    roundRGBA(arr) {
-      return (`${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`)
+    roundRGBA(arr, idx) {
+      return ({idx: idx, rgba: `${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`})
     },
     round(value) {
       return Math.ceil(value / this.rgbPrecision) * this.rgbPrecision;
@@ -270,16 +271,16 @@ export default {
       let pixels = chunk(this.originalImage.data, 4);
 
       // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
-      this.simplifiedImage = pixels.map(d => this.roundRGBA(d));
+      this.simplifiedImage = pixels.map((d,i) => this.roundRGBA(d, i));
 
       // count the number of occurrences of RGBA values, to reduce to single values to compare.
-      let chunkCount = countBy(this.simplifiedImage);
-
-      // convert from an object to an array
-      this.simplifiedColorArr = Object.keys(chunkCount).map(key => ({
-        id: key,
-        count: chunkCount[key]
-      }));
+      this.simplifiedColorArr = _(this.simplifiedImage).groupBy("rgba")
+        .map((values, key) => ({
+          idx: values.map(d => d.idx),
+          count: values.length,
+          id: key
+        }))
+        .value()
 
       this.numColors2Match = this.simplifiedColorArr.length;
 
