@@ -237,7 +237,7 @@ export default {
         } else {
           canvas.width = this.maxWidth * 0.95;
         }
-        canvas.height = this.imageWidth * (this.imageHeight/this.imageWidth);
+        canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
 
         var ctx = canvas.getContext('2d'); // load context of canvas
         var img = this.simplifiedImage.map(d => d.rgba.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
@@ -276,7 +276,7 @@ export default {
       } else {
         canvas.width = this.maxWidth * 0.95;
       }
-      canvas.height = this.imageWidth * (this.imageHeight/this.imageWidth);
+      canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
 
       var ctx = canvas.getContext('2d'); // load context of canvas
       var img = pixels;
