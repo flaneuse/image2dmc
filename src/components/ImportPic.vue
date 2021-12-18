@@ -184,7 +184,7 @@ export default {
       imageHeight: 80,
       rgbPrecision: 5,
       matchProgress: 0,
-      colorsPerSec: 570,
+      colorsPerSec: 500,
       numColors2Match: null,
       isMatching: false,
       fileLoaded: false,
