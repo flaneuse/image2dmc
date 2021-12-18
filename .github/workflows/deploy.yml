@@ -1,0 +1,32 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Deploy app
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# workflow run
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: npm --prefix web/ install
+    - name: build website
+      run: npm --prefix web/ run build
+    - name: github push
+      run: |
+          git config --global user.name 'Laura Hughes'
+          git config --global user.email 'flaneuse@users.noreply.github.com'
+          git add -A
+          git commit -m 'deploy via GitHub Actions'
+          git push -f git@github.com:flaneuse/image2dmc.git main:gh-pages
