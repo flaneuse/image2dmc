@@ -100,7 +100,10 @@ df %>% ggplot(aes(x = column, y = row, fill = hex_8824_scan))+
   scale_fill_identity() +
   theme_void()
 
-df %>% ungroup() %>% sample_n(5) %>% 
+sampled = df %>% ungroup() %>% sample_n(9) 
+sampled %>% pull(name)
+
+sampled %>% 
   ggplot(aes(x = column, y = row, fill = hex_8824_scan))+
   geom_tile() +
   scale_y_reverse() +
