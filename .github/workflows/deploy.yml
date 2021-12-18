@@ -25,11 +25,11 @@ jobs:
         node-version: '14'
     - run: npm install
     - name: build website
-      run: |
-          npm run build
-          cd dist
+      run: npm run build
     - name: Commit files
       run: |
+          cd dist
+          git status
           git config --global user.name 'Laura Hughes'
           git config --global user.email 'flaneuse@users.noreply.github.com'
           git add -A
