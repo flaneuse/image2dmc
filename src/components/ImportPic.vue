@@ -2,31 +2,31 @@
 <div class="m-5">
   <h1>Happy Christmas, Mom!</h1>
 
-  <!-- input options -->
-  <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-center">
+  <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
+
+  <!-- select file & match button -->
+  <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-center justify-content-between">
     <!-- select file -->
     <input type="file" id="file" accept="image/*" @change="loadFile">
 
-    <template v-if="fileLoaded">
-      <!-- number of colors -->
-      <div id="input-num-colors mr-5 d-flex align-items-center">
-        <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
-        <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
-      </div>
-
+    <div v-if="fileLoaded" class="d-flex">
       <!-- execute -->
-      <b-button @click="matchColors">Match colors</b-button>
-    </template>
-  </div>
+      <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match colors</b-button>
 
-  <!-- Progress bar -->
-  <div class="w-100 m-auto">
-
-    <div class="d-flex flex-column arrange-items-center w-50" v-if="isMatching">
-      <small class="text-muted">Percent complete</small>
-      <b-progress :value="matchProgress" max="1" show-progress animated></b-progress>
+      <!-- Progress bar -->
+      <div class="ml-3 w-400px">
+        <div class="d-flex flex-column arrange-items-center">
+          <small class="text-muted">Percent matched</small>
+          <b-progress max="1" height="1.25rem" show-progress :animated="matchProgress < 1">
+            <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`"></b-progress-bar>
+          </b-progress>
+        </div>
+      </div>
     </div>
+
   </div>
+
+
 
   <!-- image previews -->
   <div id="image-previews" class="d-flex flex-wrap">
@@ -41,7 +41,7 @@
 
       <!-- change amount of averaging -->
       <div id="input-degree-avg mr-5 d-flex align-items-center">
-        <label for="num-colors" class="d-flex justify-conten-between mr-2 mb-n2">
+        <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
           Amount of simplifcation
           <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
         </label>
@@ -61,6 +61,13 @@
 
   <!-- results -->
   <div id="results" v-if="filteredMatches.length">
+    <!-- number of colors -->
+    <div id="input-num-colors mr-5 d-flex align-items-center">
+      <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
+      <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
+    </div>
+
+
     <table>
       <thead>
         <tr class="font-weight-bold text-left">
@@ -252,7 +259,7 @@ export default {
       this.isMatching = true;
 
       this.imageDMC = this.imagePixels.map((d, i) => {
-        this.matchProgress = i / this.imagePixels.length;
+        this.matchProgress = (i+1) / this.imagePixels.length;
 
         if (i % 1000 === 0) {
           console.log(this.matchProgress)
@@ -286,6 +293,7 @@ export default {
 
       // sort descendingly by count
       this.matchedColors.sort((a, b) => b.count - a.count);
+      this.isMatching = false;
     }
   }
 }
@@ -299,5 +307,13 @@ td {
 
 .input-num-colors {
     width: 225px;
+}
+
+.disabled {
+    pointer-events: none;
+}
+
+.w-400px {
+width: 400px;
 }
 </style>
