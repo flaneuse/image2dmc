@@ -28,7 +28,7 @@ jobs:
       run: npm run build
     - name: Commit files
       run: |
-          cd dist
+          mv dist/ docs/
           git status
           git config --global user.name 'Laura Hughes'
           git config --global user.email 'flaneuse@users.noreply.github.com'
@@ -39,7 +39,6 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         force: true
-        directory: dist
         branch: gh-pages
 
 
