@@ -9,29 +9,29 @@
     <!-- select file -->
     <div class="d-flex flex-column align-items-start">
       <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">1 Select file</span>
-      <b-form-file type="file" id="file" accept="image/*" @change="loadFile"/>
+      <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
     </div>
 
     <div class="d-flex flex-column align-items-start" v-if="fileLoaded">
       <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">2 Adjust simplification</span>
       <div class="d-flex align-items-start">
-      <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
-      <!-- change amount of averaging -->
-      <div id="input-degree-avg mr-5 d-flex align-items-center">
-        <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-          Amount of simplifcation
-          <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
-        </label>
+        <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
+        <!-- change amount of averaging -->
+        <div id="input-degree-avg mr-5 d-flex align-items-center">
+          <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
+            Amount of simplifcation
+            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+          </label>
 
-        <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
-        <div class="d-flex justify-content-between mt-n2">
-          <span>none</span>
-          <span>max</span>
+          <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
+          <div class="d-flex justify-content-between mt-n2">
+            <span>none</span>
+            <span>max</span>
+          </div>
+          <div>
+            Est. time: ~ {{estimatedTime}}
+          </div>
         </div>
-        <div>
-          Est. time: ~ {{estimatedTime}}
-        </div>
-      </div>
       </div>
     </div>
 
@@ -90,59 +90,74 @@
 
 
   <!-- results -->
-  <div id="results" v-if="filteredMatches.length" class="border-top mt-4 pt-4 ">
-    <h2>Matched colors</h2>
-    <!-- number of colors -->
-    <div class="d-flex justify-content-end">
-      <div id="input-num-colors mr-5 d-flex align-items-center justify-content-end w-25">
-        <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
-        <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
-      </div>
+  <div id="results" class="border-top mt-4 pt-4 ">
+    <h2 v-if="filteredMatches.length">Matched colors</h2>
 
+<div class="d-flex flex-wrap" id="preview-results">
+    <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[filteredMatches.length ? 'd-flex flex-column' : 'd-none' ]">
+      <div class="d-flex" v-if="filteredMatches.length && filteredMatches[rIdx]">
+        <div :style="{width: '50px', height: '25px', background: filteredMatches[rIdx].dmc_hex}">
+        </div>
+        <h4 class="m-0 ml-2">DMC {{filteredMatches[rIdx]["dmc_id"]}}</h4>
+      </div>
+      <canvas :id="'result' + rIdx"></canvas>
+    </div>
     </div>
 
+    <template v-if="filteredMatches.length">
+      <!-- number of colors -->
+      <div class="d-flex justify-content-end">
+        <div id="input-num-colors mr-5 d-flex align-items-center justify-content-end w-25">
+          <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
+          <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
+        </div>
 
-    <table>
-      <thead>
-        <tr class="font-weight-bold text-left">
-          <td>
+      </div>
 
-          </td>
-          <td>
-            DMC code
-          </td>
-          <td>
-            name
-          </td>
-          <td>
-            Percent of image
-          </td>
-          <td>
-            Avg. score (lower is a closer match)
-          </td>
-        </tr>
-      </thead>
 
-      <tbody>
-        <tr v-for="(color, idx) in filteredMatches" :key="idx" class="text-left">
-          <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
-          </td>
-          <td class="h4">
-            {{color.dmc_id}}
-          </td>
-          <td>
-            {{color.dmc_name}}
-          </td>
-          <td>
-            {{color.pct}}
-          </td>
-          <td>
-            {{color.score}}
-          </td>
-        </tr>
-      </tbody>
+      <table>
+        <thead>
+          <tr class="font-weight-bold text-left">
+            <td>
 
-    </table>
+            </td>
+            <td>
+              DMC code
+            </td>
+            <td>
+              name
+            </td>
+            <td>
+              Percent of image
+            </td>
+            <td>
+              Avg. score (lower is a closer match)
+            </td>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr v-for="(color, idx) in filteredMatches" :key="idx" class="text-left">
+            <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
+            </td>
+            <td class="h4">
+              {{color.dmc_id}}
+            </td>
+            <td>
+              {{color.dmc_name}}
+            </td>
+            <td>
+              {{color.pct}}
+            </td>
+            <td>
+              {{color.score}}
+            </td>
+          </tr>
+        </tbody>
+
+      </table>
+    </template>
+
   </div>
 
 </div>
@@ -179,7 +194,8 @@ export default {
       originalImage: null,
       simplifiedColorArr: [],
       matchedColors: [],
-      matchedColorArr: []
+      matchedColorArr: [],
+      matchedColorSmMult: []
     }
   },
   computed: {
@@ -207,11 +223,20 @@ export default {
         canvas.width = this.imageWidth;
         canvas.height = this.imageHeight;
         var ctx = canvas.getContext('2d'); // load context of canvas
-        console.log(this.simplifiedImage)
         var img = this.simplifiedImage.map(d => d.rgba.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
 
         var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
         ctx.putImageData(palette, 0, 0);
+      }
+    },
+    matchedColorSmMult: function() {
+      // plot rounded version
+      if (this.matchedColorSmMult.length) {
+        this.matchedColorSmMult.forEach((d, i) => {
+          if (i < this.numMatches) {
+            this.plotResult(d, `result${i}`)
+          }
+        })
       }
     }
   },
@@ -223,6 +248,16 @@ export default {
     })
   },
   methods: {
+    plotResult(pixels, id) {
+      var canvas = document.getElementById(id); // load context of canvas
+      canvas.width = this.imageWidth;
+      canvas.height = this.imageHeight;
+      var ctx = canvas.getContext('2d'); // load context of canvas
+      var img = pixels;
+
+      var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
+      ctx.putImageData(palette, 0, 0);
+    },
     loadFile(event) {
       // resetting the values on new file load.
       this.isMatching = false;
@@ -251,7 +286,10 @@ export default {
       }
     },
     roundRGBA(arr, idx) {
-      return ({idx: idx, rgba: `${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`})
+      return ({
+        idx: idx,
+        rgba: `${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`
+      })
     },
     round(value) {
       return Math.ceil(value / this.rgbPrecision) * this.rgbPrecision;
@@ -271,7 +309,7 @@ export default {
       let pixels = chunk(this.originalImage.data, 4);
 
       // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
-      this.simplifiedImage = pixels.map((d,i) => this.roundRGBA(d, i));
+      this.simplifiedImage = pixels.map((d, i) => this.roundRGBA(d, i));
 
       // count the number of occurrences of RGBA values, to reduce to single values to compare.
       this.simplifiedColorArr = _(this.simplifiedImage).groupBy("rgba")
@@ -297,8 +335,10 @@ export default {
           obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
           const closest = this.calcDist(obj.color);
           obj["hex"] = obj.color.hex();
+          obj["idx"] = d.idx;
           obj["pixel_count"] = d.count;
           obj["closest_hex"] = closest.hex;
+          obj["closest_rgb"] = [closest.r, closest.g, closest.b];
           obj["closest_name"] = closest.name;
           obj["closest_dmc_id"] = closest.dmc_id;
           obj["closest_score"] = closest.dist;
@@ -318,14 +358,29 @@ export default {
             dmc_id: values[0]["closest_dmc_id"],
             dmc_name: values[0]["closest_name"],
             dmc_hex: values[0]["closest_hex"],
+            dmc_rgb: values[0]["closest_rgb"],
+            idx: values.flatMap(d => d.idx),
             count: sumBy(values, "pixel_count"),
             score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
             pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImage.length)
           }))
-          .value()
+          .value();
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.count - a.count);
+
+        // result small multiples
+        this.matchedColorSmMult = this.matchedColors.map(color => {
+          let pixels = new Array(this.simplifiedImage.length * 4).fill(0);
+          color.idx.forEach(i => {
+            pixels[+i * 4] = color.dmc_rgb[0];
+            pixels[+i * 4 + 1] = color.dmc_rgb[1];
+            pixels[+i * 4 + 2] = color.dmc_rgb[2];
+            pixels[+i * 4 + 3] = 255;
+          })
+          return (pixels);
+        })
+
         this.isMatching = false;
       });
     }
@@ -356,9 +411,13 @@ td {
 }
 
 .btn-outline-secondary {
-  background: none !important;
-  &:hover{
-    background: #aaa !important;
-  }
+    background: none !important;
+    &:hover {
+        background: #aaa !important;
+    }
+}
+
+canvas {
+    border: 1px solid #555;
 }
 </style>
