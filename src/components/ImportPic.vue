@@ -175,11 +175,11 @@ export default {
       isMatching: false,
       fileLoaded: false,
       numMatches: 10,
-      roundedRGBA: [],
-      imageRaw: null,
-      imagePixels: [],
+      simplifiedImage: [],
+      originalImage: null,
+      simplifiedPixels: [],
       matchedColors: [],
-      imageDMC: []
+      matchedPixels: []
     }
   },
   computed: {
@@ -200,14 +200,14 @@ export default {
     }
   },
   watch: {
-    roundedRGBA: function() {
+    simplifiedImage: function() {
       // plot rounded version
-      if (this.roundedRGBA.length) {
+      if (this.simplifiedImage.length) {
         var canvas = document.getElementById('preview'); // load context of canvas
         canvas.width = this.imageWidth;
         canvas.height = this.imageHeight;
         var ctx = canvas.getContext('2d'); // load context of canvas
-        var img = this.roundedRGBA.map(d => d.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
+        var img = this.simplifiedImage.map(d => d.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
 
         var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
         ctx.putImageData(palette, 0, 0);
@@ -241,11 +241,9 @@ export default {
         canvas.height = this.imageHeight;
 
         ctx.drawImage(img, 0, 0, this.imageWidth, this.imageHeight); // draw the image to the canvas
-        this.imageRaw = ctx.getImageData(0, 0, this.imageWidth, this.imageHeight);
+        this.originalImage = ctx.getImageData(0, 0, this.imageWidth, this.imageHeight);
 
         this.simplifyImage();
-
-        console.log(this.imagePixels.length)
 
         // allow color matching to happen
         this.fileLoaded = true;
@@ -269,30 +267,30 @@ export default {
     },
     simplifyImage() {
       // split into RGBA values
-      let pixels = chunk(this.imageRaw.data, 4);
+      let pixels = chunk(this.originalImage.data, 4);
 
       // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
-      this.roundedRGBA = pixels.map(d => this.roundRGBA(d));
+      this.simplifiedImage = pixels.map(d => this.roundRGBA(d));
 
       // count the number of occurrences of RGBA values, to reduce to single values to compare.
-      let chunkCount = countBy(this.roundedRGBA);
+      let chunkCount = countBy(this.simplifiedImage);
 
       // convert from an object to an array
-      this.imagePixels = Object.keys(chunkCount).map(key => ({
+      this.simplifiedPixels = Object.keys(chunkCount).map(key => ({
         id: key,
         count: chunkCount[key]
       }));
 
-      this.numColors2Match = this.imagePixels.length;
+      this.numColors2Match = this.simplifiedPixels.length;
 
 
       // sort high to low
-      this.imagePixels.sort((a, b) => b.count - a.count);
+      this.simplifiedPixels.sort((a, b) => b.count - a.count);
     },
     calcMatch(d, i) {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
-          this.matchProgress = (i + 1) / this.imagePixels.length;
+          this.matchProgress = (i + 1) / this.simplifiedPixels.length;
           let obj = {};
           const rgba = d.id.split(",")
           obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
@@ -310,10 +308,10 @@ export default {
     matchColors() {
       this.isMatching = true;
 
-      Promise.all(this.imagePixels.map((d, i) => this.calcMatch(d, i))).then((values) => {
-        this.imageDMC = values;
+      Promise.all(this.simplifiedPixels.map((d, i) => this.calcMatch(d, i))).then((values) => {
+        this.matchedPixels = values;
         // sum number of occurrences of the DMC color
-        this.matchedColors = _(this.imageDMC).groupBy("closest_dmc_id")
+        this.matchedColors = _(this.matchedPixels).groupBy("closest_dmc_id")
           .map((values, i) => ({
             values: values,
             dmc_id: values[0]["closest_dmc_id"],
@@ -321,7 +319,7 @@ export default {
             dmc_hex: values[0]["closest_hex"],
             count: sumBy(values, "pixel_count"),
             score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
-            pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.roundedRGBA.length)
+            pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImage.length)
           }))
           .value()
 
