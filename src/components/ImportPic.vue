@@ -167,8 +167,8 @@ import {
   deltaE
 } from "chroma-js";
 import chroma from 'chroma-js';
-import DMC from "@/assets/dmc_colors.json";
-// import DMC from "@/assets/dmc_colors_ldh.json";
+// import DMC from "@/assets/dmc_colors.json";
+import DMC from "@/assets/dmc_colors_ldh.json";
 import chunk from "lodash/chunk";
 import sumBy from "lodash/sumBy";
 import countBy from "lodash/countBy";
@@ -188,7 +188,7 @@ export default {
       numColors2Match: null,
       isMatching: false,
       fileLoaded: false,
-      numMatches: 10,
+      numMatches: 20,
       simplifiedImage: [],
       originalImage: null,
       simplifiedColorArr: [],
@@ -241,9 +241,10 @@ export default {
   },
   mounted() {
     DMC.forEach(d => {
-      // d["color"] = chroma(d.hex);
-      d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
-      d["hex"] = d.color.hex();
+      // d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
+      // d["hex"] = d.color.hex();
+      d["color"] = chroma(d.hex);
+      d["rgb"] = d.color.rgb();
     })
   },
   methods: {
@@ -337,7 +338,8 @@ export default {
           obj["idx"] = d.idx;
           obj["pixel_count"] = d.count;
           obj["closest_hex"] = closest.hex;
-          obj["closest_rgb"] = [closest.r, closest.g, closest.b];
+          obj["closest_rgb"] = closest.rgb;
+          // obj["closest_rgb"] = [closest.r, closest.g, closest.b];
           obj["closest_name"] = closest.name;
           obj["closest_dmc_id"] = closest.dmc_id;
           obj["closest_score"] = closest.dist;
