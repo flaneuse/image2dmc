@@ -1,6 +1,6 @@
 <template>
 <div class="m-5">
-  <h1>Happy Christmas, Mom!</h1>
+  <h1 class="my-5">Happy Christmas, Mom!</h1>
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
 
@@ -59,7 +59,7 @@
 
 
   <!-- image previews -->
-  <div id="image-previews" class="d-flex flex-wrap">
+  <div id="image-previews" :class="[fileLoaded ? 'd-flex flex-wrap' : 'd-none' ]">
     <div id="original-preview">
       <h5>original image</h5>
       <canvas id="canvas"></canvas>
