@@ -41,12 +41,18 @@
 
       <!-- change amount of averaging -->
       <div id="input-degree-avg mr-5 d-flex align-items-center">
-        <label for="num-colors" class="flex-shrink-0 mr-2 mb-n2">Amount of simplifcation</label>
+        <label for="num-colors" class="d-flex justify-conten-between mr-2 mb-n2">
+          Amount of simplifcation
+          <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+        </label>
 
         <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
         <div class="d-flex justify-content-between mt-n2">
           <span>none</span>
           <span>max</span>
+        </div>
+        <div>
+          Est. time: ~ {{estimatedTime}}
         </div>
       </div>
     </div>
@@ -123,6 +129,8 @@ export default {
       imageHeight: 80,
       rgbPrecision: 5,
       matchProgress: 0,
+      colorsPerSec: 1050,
+      numColors2Match: null,
       isMatching: false,
       fileLoaded: false,
       numMatches: 10,
@@ -136,6 +144,18 @@ export default {
   computed: {
     filteredMatches() {
       return (this.matchedColors.slice(0, this.numMatches))
+    },
+    estimatedTime() {
+      const est = this.numColors2Match / this.colorsPerSec;
+      if (est < 0.05) {
+        return ("< 0.1 seconds")
+      } else if (est < 60) {
+        return (`${d3.format("0.1f")(est)} seconds`)
+      } else if (est < 3600) {
+        return (`${d3.format("0.1f")(est/60)} minutes`)
+      } else {
+        return (`${d3.format("0.1f")(est/3600)} hours`)
+      }
     }
   },
   watch: {
@@ -221,6 +241,9 @@ export default {
         id: key,
         count: chunkCount[key]
       }));
+
+      this.numColors2Match = this.imagePixels.length;
+
 
       // sort high to low
       this.imagePixels.sort((a, b) => b.count - a.count);
