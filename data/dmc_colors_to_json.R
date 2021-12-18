@@ -75,11 +75,12 @@ ggplot(colors %>% filter(key %in% c(
 # 8824 / 8815 / scan?
 
 df %>% 
-  filter(! is.na(hex_8824)) %>% 
-  select(dmc_id, name, hex = hex_8824) %>% 
+  filter(! is.na(hex_8824_scan)) %>% 
+  select(dmc_id, name, hex = hex_8824_scan) %>% 
   jsonlite::write_json("~/GitHub/image2dmc/src/assets/dmc_colors_ldh.json")
 
 df[df %>% select(hex_8824) %>% duplicated(), "hex_8824"]
+df[df %>% select(hex_scan001) %>% duplicated(), "hex_scan001"]
 
 df %>% ggplot(aes(x = column, y = row, fill = hex_8824))+
   geom_tile() +
@@ -88,6 +89,12 @@ df %>% ggplot(aes(x = column, y = row, fill = hex_8824))+
   theme_void()
 
 df %>% ggplot(aes(x = column, y = row, fill = hex_scan001))+
+  geom_tile() +
+  scale_y_reverse() +
+  scale_fill_identity() +
+  theme_void()
+
+df %>% ggplot(aes(x = column, y = row, fill = hex_8824_scan))+
   geom_tile() +
   scale_y_reverse() +
   scale_fill_identity() +
