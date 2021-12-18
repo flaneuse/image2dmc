@@ -20,7 +20,6 @@
         <div id="input-degree-avg mr-5 d-flex align-items-center">
           <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
             Amount of simplifcation
-            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
           </label>
 
           <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
@@ -28,7 +27,9 @@
             <span>none</span>
             <span>max</span>
           </div>
-          <div>
+          <div class="d-flex justify-content-between">
+            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+            <span class="text-muted mx-2">&bull;</span>
             Est. time: ~ {{estimatedTime}}
           </div>
         </div>
@@ -92,7 +93,7 @@
   <!-- results -->
   <div id="results" class="border-top mt-4 pt-4 ">
     <div class="d-flex align-items-center mb-4" v-if="filteredMatches.length">
-      <div class="d-flex flex-column">
+      <div class="d-flex flex-column align-items-start">
       <h2>Matched colors</h2>
       <a href="#matched-table">
         view table
