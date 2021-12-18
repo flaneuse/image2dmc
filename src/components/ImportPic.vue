@@ -127,7 +127,7 @@
         <tr v-for="(color, idx) in filteredMatches" :key="idx" class="text-left">
           <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
           </td>
-          <td>
+          <td class="h4">
             {{color.dmc_id}}
           </td>
           <td>
