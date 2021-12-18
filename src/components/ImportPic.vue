@@ -1,5 +1,5 @@
 <template>
-<div class="m-5">
+<div class="m-3 m-md-5" ref="container">
   <h1 class="my-5">Happy Christmas, Mom!</h1>
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
@@ -7,12 +7,13 @@
   <!-- select file & match button -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
     <!-- select file -->
-    <div class="d-flex flex-column align-items-start">
+    <div class="d-flex flex-column align-items-start my-2">
       <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">1 Select file</span>
       <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
     </div>
 
-    <div class="d-flex flex-column align-items-start" v-if="fileLoaded">
+<!-- averaging -->
+    <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded">
       <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">2 Adjust simplification</span>
       <div class="d-flex align-items-start">
         <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
@@ -36,10 +37,10 @@
       </div>
     </div>
 
-
-    <div v-if="fileLoaded" class="d-flex flex-column align-items-start">
+<!-- match button w/ progress bar -->
+    <div v-if="fileLoaded" class="d-flex flex-column align-items-start my-2">
       <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">3 Match colors</span>
-      <div class="d-flex">
+      <div class="d-flex flex-wrap">
         <!-- execute -->
         <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
 
@@ -60,7 +61,10 @@
 
 
   <!-- image previews -->
-  <div id="image-previews" :class="[fileLoaded ? 'd-flex flex-wrap' : 'd-none' ]">
+  <div id="image-previews" :class="[fileLoaded ? 'd-flex flex-column' : 'd-none' ]">
+    <h3>Previews</h3>
+    <div class="d-flex flex-wrap">
+
     <div id="original-preview">
       <h5>original image</h5>
       <canvas id="canvas"></canvas>
@@ -71,7 +75,7 @@
       <canvas id="preview"></canvas>
 
       <!-- change amount of averaging -->
-      <div id="input-degree-avg mr-5 d-flex align-items-center">
+      <div id="input-degree-avg" class="mr-5 d-none d-md-flex align-items-center">
         <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
           Amount of simplifcation
           <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
@@ -86,6 +90,7 @@
           Est. time: ~ {{estimatedTime}}
         </div>
       </div>
+    </div>
     </div>
   </div>
 
@@ -189,6 +194,7 @@ export default {
     return {
       imageWidth: 80,
       imageHeight: 80,
+      maxWidth: 80,
       rgbPrecision: 5,
       matchProgress: 0,
       colorsPerSec: 500,
@@ -226,8 +232,13 @@ export default {
       // plot rounded version
       if (this.simplifiedImage.length) {
         var canvas = document.getElementById('preview'); // load context of canvas
-        canvas.width = this.imageWidth;
-        canvas.height = this.imageHeight;
+        if(this.maxWidth > 500) {
+          canvas.width = this.maxWidth * 0.45;
+        } else {
+          canvas.width = this.maxWidth * 0.95;
+        }
+        canvas.height = this.imageWidth * (this.imageHeight/this.imageWidth);
+        
         var ctx = canvas.getContext('2d'); // load context of canvas
         var img = this.simplifiedImage.map(d => d.rgba.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
 
@@ -247,6 +258,7 @@ export default {
     }
   },
   mounted() {
+    this.maxWidth = this.$refs.container.clientWidth;
     DMC.forEach(d => {
       // d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
       // d["hex"] = d.color.hex();
@@ -257,8 +269,17 @@ export default {
   methods: {
     plotResult(pixels, id) {
       var canvas = document.getElementById(id); // load context of canvas
-      canvas.width = this.imageWidth;
-      canvas.height = this.imageHeight;
+      if(this.maxWidth > 1000) {
+        canvas.width = this.maxWidth * 0.25;
+        canvas.height = this.imageWidth * (img.height/img.width);
+      } else if(this.maxWidth > 500) {
+        canvas.width = this.maxWidth * 0.45;
+        canvas.height = this.imageWidth * (img.height/img.width);
+      } else {
+        canvas.width = this.maxWidth * 0.95;
+        canvas.height = this.imageWidth * (img.height/img.width);
+      }
+
       var ctx = canvas.getContext('2d'); // load context of canvas
       var img = pixels;
 
@@ -278,8 +299,14 @@ export default {
       img.src = URL.createObjectURL(event.target.files[0]); // use first selected image from input element
 
       img.onload = (e) => {
-        this.imageWidth = img.width * 0.5;
-        this.imageHeight = img.height * 0.5;
+        if(this.maxWidth > 500) {
+          this.imageWidth = this.maxWidth * 0.45;
+          this.imageHeight = this.imageWidth * (img.height/img.width);
+        } else {
+          this.imageWidth = this.maxWidth * 0.95;
+          this.imageHeight = this.imageWidth * (img.height/img.width);
+        }
+
         canvas.width = this.imageWidth;
         canvas.height = this.imageHeight;
 
@@ -413,6 +440,13 @@ td {
 .w-400px {
     width: 400px;
 }
+
+@media (max-width: 420px) {
+  .w-400px {
+      width: 200px;
+  }
+}
+
 
 .fa-lg {
     font-size: 1rem;
