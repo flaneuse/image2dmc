@@ -99,3 +99,10 @@ df %>% ggplot(aes(x = column, y = row, fill = hex_8824_scan))+
   scale_y_reverse() +
   scale_fill_identity() +
   theme_void()
+
+df %>% ungroup() %>% sample_n(5) %>% 
+  ggplot(aes(x = column, y = row, fill = hex_8824_scan))+
+  geom_tile() +
+  scale_y_reverse() +
+  scale_fill_identity() +
+  theme_void()
