@@ -177,9 +177,9 @@ export default {
       numMatches: 10,
       simplifiedImage: [],
       originalImage: null,
-      simplifiedPixels: [],
+      simplifiedColorArr: [],
       matchedColors: [],
-      matchedPixels: []
+      matchedColorArr: []
     }
   },
   computed: {
@@ -276,21 +276,21 @@ export default {
       let chunkCount = countBy(this.simplifiedImage);
 
       // convert from an object to an array
-      this.simplifiedPixels = Object.keys(chunkCount).map(key => ({
+      this.simplifiedColorArr = Object.keys(chunkCount).map(key => ({
         id: key,
         count: chunkCount[key]
       }));
 
-      this.numColors2Match = this.simplifiedPixels.length;
+      this.numColors2Match = this.simplifiedColorArr.length;
 
 
       // sort high to low
-      this.simplifiedPixels.sort((a, b) => b.count - a.count);
+      this.simplifiedColorArr.sort((a, b) => b.count - a.count);
     },
     calcMatch(d, i) {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
-          this.matchProgress = (i + 1) / this.simplifiedPixels.length;
+          this.matchProgress = (i + 1) / this.simplifiedColorArr.length;
           let obj = {};
           const rgba = d.id.split(",")
           obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
@@ -308,10 +308,10 @@ export default {
     matchColors() {
       this.isMatching = true;
 
-      Promise.all(this.simplifiedPixels.map((d, i) => this.calcMatch(d, i))).then((values) => {
-        this.matchedPixels = values;
+      Promise.all(this.simplifiedColorArr.map((d, i) => this.calcMatch(d, i))).then((values) => {
+        this.matchedColorArr = values;
         // sum number of occurrences of the DMC color
-        this.matchedColors = _(this.matchedPixels).groupBy("closest_dmc_id")
+        this.matchedColors = _(this.matchedColorArr).groupBy("closest_dmc_id")
           .map((values, i) => ({
             values: values,
             dmc_id: values[0]["closest_dmc_id"],
