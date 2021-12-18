@@ -20,9 +20,9 @@ jobs:
     - uses: actions/setup-node@v2
       with:
         node-version: '14'
-    - run: npm --prefix web/ install
+    - run: npm install
     - name: build website
-      run: npm --prefix web/ run build
+      run: npm run build
     - name: github push
       run: |
           git config --global user.name 'Laura Hughes'
