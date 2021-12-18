@@ -402,17 +402,17 @@ export default {
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.count - a.count);
 
-        // result small multiples
-        this.matchedColorSmMult = this.matchedColors.map(color => {
-          let pixels = new Array(this.simplifiedImage.length * 4).fill(0);
-          color.idx.forEach(i => {
-            pixels[+i * 4] = color.dmc_rgb[0];
-            pixels[+i * 4 + 1] = color.dmc_rgb[1];
-            pixels[+i * 4 + 2] = color.dmc_rgb[2];
-            pixels[+i * 4 + 3] = 255;
-          })
-          return (pixels);
-        })
+        // // result small multiples
+        // this.matchedColorSmMult = this.matchedColors.map(color => {
+        //   let pixels = new Array(this.simplifiedImage.length * 4).fill(0);
+        //   color.idx.forEach(i => {
+        //     pixels[+i * 4] = color.dmc_rgb[0];
+        //     pixels[+i * 4 + 1] = color.dmc_rgb[1];
+        //     pixels[+i * 4 + 2] = color.dmc_rgb[2];
+        //     pixels[+i * 4 + 3] = 255;
+        //   })
+        //   return (pixels);
+        // })
 
         this.isMatching = false;
       });
