@@ -5,21 +5,51 @@
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
 
   <!-- select file & match button -->
-  <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-center justify-content-between">
+  <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
     <!-- select file -->
-    <input type="file" id="file" accept="image/*" @change="loadFile">
+    <div class="d-flex flex-column align-items-start">
+      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">1 Select file</span>
+      <b-form-file type="file" id="file" accept="image/*" @change="loadFile"/>
+    </div>
 
-    <div v-if="fileLoaded" class="d-flex">
-      <!-- execute -->
-      <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match colors</b-button>
+    <div class="d-flex flex-column align-items-start" v-if="fileLoaded">
+      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">2 Adjust simplification</span>
+      <div class="d-flex align-items-start">
+      <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
+      <!-- change amount of averaging -->
+      <div id="input-degree-avg mr-5 d-flex align-items-center">
+        <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
+          Amount of simplifcation
+          <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+        </label>
 
-      <!-- Progress bar -->
-      <div class="ml-3 w-400px">
-        <div class="d-flex flex-column arrange-items-center">
-          <small class="text-muted">Percent matched</small>
-          <b-progress max="1" height="1.25rem" show-progress :animated="matchProgress < 1">
-            <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
-          </b-progress>
+        <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
+        <div class="d-flex justify-content-between mt-n2">
+          <span>none</span>
+          <span>max</span>
+        </div>
+        <div>
+          Est. time: ~ {{estimatedTime}}
+        </div>
+      </div>
+      </div>
+    </div>
+
+
+    <div v-if="fileLoaded" class="d-flex flex-column align-items-start">
+      <span class="badge badge-pill badge-info m-0 fa-lg mb-2">3 Match colors</span>
+      <div class="d-flex">
+        <!-- execute -->
+        <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
+
+        <!-- Progress bar -->
+        <div class="ml-3 w-400px">
+          <div class="d-flex flex-column arrange-items-center">
+            <small class="text-muted">Percent matched</small>
+            <b-progress max="1" height="1.25rem" show-progress :animated="matchProgress < 1">
+              <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
+            </b-progress>
+          </div>
         </div>
       </div>
     </div>
@@ -60,11 +90,15 @@
 
 
   <!-- results -->
-  <div id="results" v-if="filteredMatches.length">
+  <div id="results" v-if="filteredMatches.length" class="border-top mt-4 pt-4 ">
+    <h2>Matched colors</h2>
     <!-- number of colors -->
-    <div id="input-num-colors mr-5 d-flex align-items-center">
-      <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
-      <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
+    <div class="d-flex justify-content-end">
+      <div id="input-num-colors mr-5 d-flex align-items-center justify-content-end w-25">
+        <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
+        <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
+      </div>
+
     </div>
 
 
@@ -316,5 +350,16 @@ td {
 
 .w-400px {
     width: 400px;
+}
+
+.fa-lg {
+    font-size: 1rem;
+}
+
+.btn-outline-secondary {
+  background: none !important;
+  &:hover{
+    background: #aaa !important;
+  }
 }
 </style>
