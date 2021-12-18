@@ -91,30 +91,29 @@
 
   <!-- results -->
   <div id="results" class="border-top mt-4 pt-4 ">
-    <h2 v-if="filteredMatches.length">Matched colors</h2>
-
-<div class="d-flex flex-wrap" id="preview-results">
-    <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[filteredMatches.length ? 'd-flex flex-column' : 'd-none' ]">
-      <div class="d-flex" v-if="filteredMatches.length && filteredMatches[rIdx]">
-        <div :style="{width: '50px', height: '25px', background: filteredMatches[rIdx].dmc_hex}">
+    <div class="d-flex align-items-center mb-4" v-if="filteredMatches.length">
+      <h2>Matched colors</h2>
+      <!-- number of colors -->
+      <div class="ml-5 d-flex justify-content-end">
+        <div id="input-num-colors mr-5 text-left d-flex w-25">
+          <label for="num-colors" class="flex-shrink-0 mr-2 m-0">Number of colors</label>
+          <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
         </div>
-        <h4 class="m-0 ml-2">DMC {{filteredMatches[rIdx]["dmc_id"]}}</h4>
       </div>
-      <canvas :id="'result' + rIdx"></canvas>
     </div>
+
+    <div class="d-flex flex-wrap" id="preview-results">
+      <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[filteredMatches.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
+        <div class="d-flex" v-if="filteredMatches.length && filteredMatches[rIdx]">
+          <div :style="{width: '50px', height: '25px', background: filteredMatches[rIdx].dmc_hex}">
+          </div>
+          <h4 class="m-0 ml-2"><span class="font-weight-bold">DMC {{filteredMatches[rIdx]["dmc_id"]}}</span> {{filteredMatches[rIdx]["dmc_name"]}}</h4>
+        </div>
+        <canvas :id="'result' + rIdx"></canvas>
+      </div>
     </div>
 
     <template v-if="filteredMatches.length">
-      <!-- number of colors -->
-      <div class="d-flex justify-content-end">
-        <div id="input-num-colors mr-5 d-flex align-items-center justify-content-end w-25">
-          <label for="num-colors" class="flex-shrink-0 mr-2">Number of colors</label>
-          <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
-        </div>
-
-      </div>
-
-
       <table>
         <thead>
           <tr class="font-weight-bold text-left">
