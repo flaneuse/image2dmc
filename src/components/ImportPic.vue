@@ -18,7 +18,7 @@
         <div class="d-flex flex-column arrange-items-center">
           <small class="text-muted">Percent matched</small>
           <b-progress max="1" height="1.25rem" show-progress :animated="matchProgress < 1">
-            <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`"></b-progress-bar>
+            <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
           </b-progress>
         </div>
       </div>
@@ -136,7 +136,7 @@ export default {
       imageHeight: 80,
       rgbPrecision: 5,
       matchProgress: 0,
-      colorsPerSec: 1050,
+      colorsPerSec: 570,
       numColors2Match: null,
       isMatching: false,
       fileLoaded: false,
@@ -211,7 +211,7 @@ export default {
 
         this.simplifyImage();
 
-        console.log(this.imagePixels)
+        console.log(this.imagePixels.length)
 
         // allow color matching to happen
         this.fileLoaded = true;
@@ -255,45 +255,46 @@ export default {
       // sort high to low
       this.imagePixels.sort((a, b) => b.count - a.count);
     },
+    calcMatch(d, i) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          this.matchProgress = (i + 1) / this.imagePixels.length;
+          let obj = {};
+          const rgba = d.id.split(",")
+          obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
+          const closest = this.calcDist(obj.color);
+          obj["hex"] = obj.color.hex();
+          obj["pixel_count"] = d.count;
+          obj["closest_hex"] = closest.hex;
+          obj["closest_name"] = closest.name;
+          obj["closest_dmc_id"] = closest.dmc_id;
+          obj["closest_score"] = closest.dist;
+          resolve(obj)
+        }, 0)
+      });
+    },
     matchColors() {
       this.isMatching = true;
 
-      this.imageDMC = this.imagePixels.map((d, i) => {
-        this.matchProgress = (i+1) / this.imagePixels.length;
+      Promise.all(this.imagePixels.map((d, i) => this.calcMatch(d, i))).then((values) => {
+        this.imageDMC = values;
+        // sum number of occurrences of the DMC color
+        this.matchedColors = _(this.imageDMC).groupBy("closest_dmc_id")
+          .map((values, i) => ({
+            values: values,
+            dmc_id: values[0]["closest_dmc_id"],
+            dmc_name: values[0]["closest_name"],
+            dmc_hex: values[0]["closest_hex"],
+            count: sumBy(values, "pixel_count"),
+            score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
+            pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.roundedRGBA.length)
+          }))
+          .value()
 
-        if (i % 1000 === 0) {
-          console.log(this.matchProgress)
-        }
-
-        let obj = {};
-        const rgba = d.id.split(",")
-        obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
-        const closest = this.calcDist(obj.color);
-        obj["hex"] = obj.color.hex();
-        obj["pixel_count"] = d.count;
-        obj["closest_hex"] = closest.hex;
-        obj["closest_name"] = closest.name;
-        obj["closest_dmc_id"] = closest.dmc_id;
-        obj["closest_score"] = closest.dist;
-        return obj;
-      })
-
-      // sum number of occurrences of the DMC color
-      this.matchedColors = _(this.imageDMC).groupBy("closest_dmc_id")
-        .map((values, i) => ({
-          values: values,
-          dmc_id: values[0]["closest_dmc_id"],
-          dmc_name: values[0]["closest_name"],
-          dmc_hex: values[0]["closest_hex"],
-          count: sumBy(values, "pixel_count"),
-          score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
-          pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.roundedRGBA.length)
-        }))
-        .value()
-
-      // sort descendingly by count
-      this.matchedColors.sort((a, b) => b.count - a.count);
-      this.isMatching = false;
+        // sort descendingly by count
+        this.matchedColors.sort((a, b) => b.count - a.count);
+        this.isMatching = false;
+      });
     }
   }
 }
@@ -314,6 +315,6 @@ td {
 }
 
 .w-400px {
-width: 400px;
+    width: 400px;
 }
 </style>
