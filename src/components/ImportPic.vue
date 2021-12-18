@@ -92,7 +92,13 @@
   <!-- results -->
   <div id="results" class="border-top mt-4 pt-4 ">
     <div class="d-flex align-items-center mb-4" v-if="filteredMatches.length">
+      <div class="d-flex flex-column">
       <h2>Matched colors</h2>
+      <a href="#matched-table">
+        view table
+      </a>
+      </div>
+
       <!-- number of colors -->
       <div class="ml-5 d-flex justify-content-end">
         <div id="input-num-colors mr-5 text-left d-flex w-25">
@@ -114,7 +120,7 @@
     </div>
 
     <template v-if="filteredMatches.length">
-      <table>
+      <table id="matched-table">
         <thead>
           <tr class="font-weight-bold text-left">
             <td>
