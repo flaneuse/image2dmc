@@ -14,8 +14,8 @@
       </div>
 
       <!-- loading icon -->
-      <button class="btn btn-light ml-4 mt-4" type="button" disabled v-if="isLoading">
-        <span class="spinner-grow spinner-grow-sm text-info" role="status" aria-hidden="true"></span>
+      <button class="btn btn-info text-light ml-4 mt-4" type="button" disabled v-if="isLoading">
+        <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
         Loading...
       </button>
     </div>
@@ -24,24 +24,30 @@
     <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded">
       <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
       <div class="d-flex align-items-start">
-        <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
+        <!-- <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button> -->
+
         <!-- change amount of averaging -->
         <div id="input-degree-avg mr-5 d-flex align-items-center">
           <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-            Amount of simplifcation
+            Amount of simplification
           </label>
 
-          <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
-          <div class="d-flex justify-content-between mt-n2">
-            <span>none</span>
-            <span>max</span>
+          <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+          <div class="d-flex justify-content-between mt-n3">
+            <span>more</span>
+            <span>less</span>
           </div>
-          <div class="d-flex justify-content-between">
-            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
-            <span class="text-muted mx-2">&bull;</span>
+
+          <div class="d-flex flex-column mt-2">
+            <span class="d-flex">
+              <b-form-input id="num-colors" style="width: 75px"
+              v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+              <span class="ml-3">colors to match</span>
+            </span>
             Est. time: ~ {{estimatedTime}}
           </div>
         </div>
+
       </div>
     </div>
 
@@ -78,26 +84,32 @@
         <canvas id="canvas"></canvas>
       </div>
 
-      <div id="average-preview" class="ml-2">
+      <div id="average-preview" class="ml-2" :class="[isLoading ? 'd-none' : 'd-flex flex-column' ]">
         <h5>simplified image</h5>
         <canvas id="preview"></canvas>
 
         <!-- change amount of averaging -->
-        <div id="input-degree-avg" class="mr-5 d-none d-md-flex align-items-center">
+        <div id="input-degree-avg mr-5 d-flex align-items-center">
           <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-            Amount of simplifcation
-            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+            Amount of simplification
           </label>
 
-          <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
-          <div class="d-flex justify-content-between mt-n2">
-            <span>none</span>
-            <span>max</span>
+          <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+          <div class="d-flex justify-content-between mt-n3">
+            <span>more</span>
+            <span>less</span>
           </div>
-          <div>
+
+          <div class="d-flex flex-column mt-2">
+            <span class="d-flex">
+              <b-form-input id="num-colors" style="width: 75px"
+              v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+              <span class="ml-3">colors to match</span>
+            </span>
             Est. time: ~ {{estimatedTime}}
           </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -206,11 +218,9 @@ export default {
       imageHeight: 80,
       maxScreenWidth: 80,
       colorsPerSec: 500,
-      numColors2Match: null,
 
       // inputs
-      rgbPrecision: 5,
-      quantileColorNum: 50,
+      numColors2Match: 256,
       numMatches: 20,
 
       // progress / status
@@ -257,6 +267,9 @@ export default {
       }
     }
   },
+  created: function() {
+    this.debounceSimplifyImage = _.debounce(this.simplifyImage, 250);
+  },
   mounted() {
     this.maxScreenWidth = this.$refs.container.clientWidth;
     DMC.forEach(d => {
@@ -292,6 +305,7 @@ export default {
       this.matchProgress = 0;
       this.matchedColors = [];
       this.fileLoaded = false;
+      this.numColors2Match = 256;
 
       this.originalCanvas = document.getElementById('canvas'); // load context of canvas
       var ctx = this.originalCanvas.getContext('2d'); // load context of canvas
@@ -333,9 +347,10 @@ export default {
     simplifyImage() {
       this.isLoading = true;
       this.isMatching = false;
+      this.timer = setTimeout(() => {
 
       let q = new RgbQuant({
-        colors: this.quantileColorNum
+        colors: this.numColors2Match
       });
       q.sample(this.originalCanvas);
       let simplifiedImage = q.reduce(this.originalCanvas);
@@ -370,12 +385,11 @@ export default {
         }))
         .value()
 
-      this.numColors2Match = this.simplifiedColorArr.length;
-
       // sort high to low
       this.simplifiedColorArr.sort((a, b) => b.count - a.count);
 
       this.isLoading = false;
+      }, 1000)
     },
     calcMatch(d, i) {
       return new Promise((resolve, reject) => {
@@ -477,5 +491,9 @@ td {
 
 canvas {
     border: 1px solid #555;
+}
+
+#range {
+    transform: rotateY(180deg);
 }
 </style>
