@@ -4,113 +4,130 @@
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
 
-  <!-- select file & match button -->
-  <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
-    <!-- select file -->
-    <div class="d-flex align-items-center">
-      <div class="d-flex flex-column align-items-start my-2">
-        <h5 class="primary-color font-weight-bold m-0">1 Select file</h5>
-        <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
-      </div>
+  <div class="accordion" role="tablist" id="file-selection">
+    <b-card no-body class="mb-1">
+      <b-card-header header-tag="header" class="p-1" role="tab">
+        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file inputs</b-button>
+      </b-card-header>
+      <b-collapse id="accordion-inputs" v-model="showInputs" accordion="my-accordion" role="tabpanel">
+        <b-card-body>
 
-      <!-- loading icon -->
-      <button class="btn btn-info text-light ml-4 mt-4" type="button" disabled v-if="isLoading">
-        <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
-        Loading...
-      </button>
-    </div>
 
-    <!-- averaging -->
-    <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded && !isLoading">
-      <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
-      <div class="d-flex align-items-start">
-        <!-- <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button> -->
+          <!-- select file & match button -->
+          <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
+            <!-- select file -->
+            <div class="d-flex align-items-center">
+              <div class="d-flex flex-column align-items-start my-2">
+                <h5 class="primary-color font-weight-bold m-0">1 Select file</h5>
+                <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
+              </div>
 
-        <!-- change amount of averaging -->
-        <div id="input-degree-avg mr-5 d-flex align-items-center">
-          <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-            Amount of simplification
-          </label>
+              <!-- loading icon -->
+              <button class="btn btn-info text-light ml-4 mt-4" type="button" disabled v-if="isLoading">
+                <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
+                Loading...
+              </button>
+            </div>
 
-          <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
-          <div class="d-flex justify-content-between mt-n3">
-            <span>more</span>
-            <span>less</span>
+            <!-- averaging -->
+            <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded && !isLoading">
+              <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
+              <div class="d-flex align-items-start">
+                <!-- <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button> -->
+
+                <!-- change amount of averaging -->
+                <div id="input-degree-avg mr-5 d-flex align-items-center">
+                  <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
+                    Amount of simplification
+                  </label>
+
+                  <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+                  <div class="d-flex justify-content-between mt-n3">
+                    <span>more</span>
+                    <span>less</span>
+                  </div>
+
+                  <div class="d-flex flex-column mt-2">
+                    <span class="d-flex">
+                      <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+                      <span class="ml-3">colors to match</span>
+                    </span>
+                    Est. time: ~ {{estimatedTime}}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- match button w/ progress bar -->
+            <div v-if="fileLoaded && !isLoading" class="d-flex flex-column align-items-start my-2">
+              <h5 class="primary-color font-weight-bold m-0  mb-2">3 Match colors</h5>
+              <div class="d-flex flex-wrap">
+                <!-- execute -->
+                <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
+
+                <!-- Progress bar -->
+                <div class="ml-3 w-400px">
+                  <div class="d-flex flex-column arrange-items-center">
+                    <small class="text-muted">Percent matched</small>
+                    <b-progress max="1" height="1.25rem" show-progress variant="info" :animated="matchProgress < 1">
+                      <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
+                    </b-progress>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div class="d-flex flex-column mt-2">
-            <span class="d-flex">
-              <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
-              <span class="ml-3">colors to match</span>
-            </span>
-            Est. time: ~ {{estimatedTime}}
+
+
+          <!-- image previews -->
+          <div id="image-previews" :class="[fileLoaded ? 'd-flex flex-column' : 'd-none' ]">
+            <h3>Previews</h3>
+            <div class="d-flex flex-wrap">
+
+              <div id="original-preview">
+                <h5>original image</h5>
+                <canvas id="canvas"></canvas>
+              </div>
+
+              <div id="average-preview" class="ml-2" :class="[isLoading ? 'd-none' : 'd-flex flex-column' ]">
+                <h5>simplified image</h5>
+                <canvas id="preview"></canvas>
+
+                <!-- change amount of averaging -->
+                <div id="input-degree-avg mr-5 d-flex align-items-center">
+                  <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
+                    Amount of simplification
+                  </label>
+
+                  <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+                  <div class="d-flex justify-content-between mt-n3">
+                    <span>more</span>
+                    <span>less</span>
+                  </div>
+
+                  <div class="d-flex flex-column mt-2">
+                    <span class="d-flex">
+                      <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+                      <span class="ml-3">colors to match</span>
+                    </span>
+                    Est. time: ~ {{estimatedTime}}
+                  </div>
+                </div>
+
+              </div>
+            </div>
           </div>
-        </div>
 
-      </div>
-    </div>
 
-    <!-- match button w/ progress bar -->
-    <div v-if="fileLoaded && !isLoading" class="d-flex flex-column align-items-start my-2">
-      <h5 class="primary-color font-weight-bold m-0  mb-2">3 Match colors</h5>
-      <div class="d-flex flex-wrap">
-        <!-- execute -->
-        <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
-
-        <!-- Progress bar -->
-        <div class="ml-3 w-400px">
-          <div class="d-flex flex-column arrange-items-center">
-            <small class="text-muted">Percent matched</small>
-            <b-progress max="1" height="1.25rem" show-progress variant="info" :animated="matchProgress < 1">
-              <b-progress-bar :value="matchProgress" :label="`${(matchProgress * 100).toFixed(1)}%`" key="pb"></b-progress-bar>
-            </b-progress>
-          </div>
-        </div>
-      </div>
-    </div>
-
+        </b-card-body>
+      </b-collapse>
+    </b-card>
   </div>
 
 
-
-  <!-- image previews -->
-  <div id="image-previews" :class="[fileLoaded ? 'd-flex flex-column' : 'd-none' ]">
-    <h3>Previews</h3>
-    <div class="d-flex flex-wrap">
-
-      <div id="original-preview">
-        <h5>original image</h5>
-        <canvas id="canvas"></canvas>
-      </div>
-
-      <div id="average-preview" class="ml-2" :class="[isLoading ? 'd-none' : 'd-flex flex-column' ]">
-        <h5>simplified image</h5>
-        <canvas id="preview"></canvas>
-
-        <!-- change amount of averaging -->
-        <div id="input-degree-avg mr-5 d-flex align-items-center">
-          <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-            Amount of simplification
-          </label>
-
-          <b-form-input id="num-colors-range" v-model="numColors2Match" type="range" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
-          <div class="d-flex justify-content-between mt-n3">
-            <span>more</span>
-            <span>less</span>
-          </div>
-
-          <div class="d-flex flex-column mt-2">
-            <span class="d-flex">
-              <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
-              <span class="ml-3">colors to match</span>
-            </span>
-            Est. time: ~ {{estimatedTime}}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
 
 
   <!-- results -->
@@ -232,7 +249,8 @@ export default {
       // inputs
       initialNum2Match: 50,
       numColors2Match: null, // holder for input manipulations
-      numMatches: 10,
+      // numMatches: 10,
+      showInputs: true,
 
       // progress / status
       matchProgress: 0,
@@ -434,6 +452,8 @@ export default {
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
         this.plotResults();
+
+        this.showInputs = false;
       });
     },
     plotResults() {
