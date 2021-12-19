@@ -19,6 +19,10 @@ $primary-color: #2A97B3;
     color: #2c3e50;
 }
 
+.primary-color {
+  color: $primary-color;
+}
+
 #nav {
     padding: 0.75rem 2rem;
 

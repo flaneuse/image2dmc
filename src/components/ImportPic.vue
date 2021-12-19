@@ -8,13 +8,13 @@
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
     <!-- select file -->
     <div class="d-flex flex-column align-items-start my-2">
-      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">1 Select file</span>
+      <h5 class="primary-color font-weight-bold m-0  mb-2">1 Select file</h5>
       <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
     </div>
 
 <!-- averaging -->
     <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded">
-      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">2 Adjust simplification</span>
+      <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
       <div class="d-flex align-items-start">
         <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button>
         <!-- change amount of averaging -->
@@ -39,7 +39,7 @@
 
 <!-- match button w/ progress bar -->
     <div v-if="fileLoaded" class="d-flex flex-column align-items-start my-2">
-      <span class="badge badge-pill badge-secondary m-0 fa-lg mb-2">3 Match colors</span>
+      <h5 class="primary-color font-weight-bold m-0  mb-2">3 Match colors</h5>
       <div class="d-flex flex-wrap">
         <!-- execute -->
         <b-button @click="matchColors" class="btn btn-info btn-lg" :class="{'disabled': isMatching}">Match</b-button>
@@ -335,6 +335,7 @@ export default {
       return (closestColor)
     },
     simplifyImage() {
+      this.isMatching = false;
       // split into RGBA values
       let pixels = chunk(this.originalImage.data, 4);
 
@@ -410,8 +411,6 @@ export default {
         //   })
         //   return (pixels);
         // })
-
-        this.isMatching = false;
       });
     }
   }
@@ -430,6 +429,9 @@ td {
 
 .disabled {
     pointer-events: none;
+    background: rgba(0, 0, 0, 0.12);
+    color: rgba(0, 0, 0, 0.26);
+    border-color: rgba(0, 0, 0, 0.26);
 }
 
 .w-400px {
