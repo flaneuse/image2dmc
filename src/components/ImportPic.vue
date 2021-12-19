@@ -3,6 +3,7 @@
   <h1 class="my-5">Happy Christmas, Mom!</h1>
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
+  <canvas id="result"></canvas>
 
   <!-- select file & match button -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
@@ -132,7 +133,18 @@
       </div>
     </div>
 
-    <div class="d-flex flex-wrap" id="preview-results">
+    <!-- Result preview -->
+    <div id="result-preview">
+      <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
+        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm">
+          <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          {{color.dmc_name}} ({{color.dmc_id}})
+        </b-form-checkbox>
+      </b-form-checkbox-group>
+
+    </div>
+
+    <!-- <div class="d-flex flex-wrap" id="preview-results">
       <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
         <div class="d-flex" v-if="matches2Preview.length && matches2Preview[rIdx]">
           <div :style="{width: '50px', height: '25px', background: matches2Preview[rIdx].dmc_hex}">
@@ -141,7 +153,7 @@
         </div>
         <canvas :id="'result' + rIdx"></canvas>
       </div>
-    </div>
+    </div> -->
 
     <template v-if="matchedColors.length">
       <table id="matched-table">
@@ -218,7 +230,8 @@ export default {
       colorsPerSec: 200,
 
       // inputs
-      numColors2Match: 50,
+      initialNum2Match: 50,
+      numColors2Match: null, // holder for input manipulations
       numMatches: 10,
 
       // progress / status
@@ -229,13 +242,16 @@ export default {
 
       // refs
       originalCanvas: null,
+      resultCtx: null,
       timer: null,
 
       // images
       simplifiedImagePixels: [],
       simplifiedColorArr: [],
       matchedColors: [],
-      matches2Preview: []
+      matchedPixelArr: [],
+      matches2Preview: [],
+      selectedIDs: []
     }
   },
   computed: {
@@ -252,22 +268,12 @@ export default {
       }
     }
   },
-  watch: {
-    matchedColorSmMult: function() {
-      // plot rounded version
-      if (this.matchedColorSmMult.length) {
-        this.matchedColorSmMult.forEach((d, i) => {
-          if (i < this.numMatches) {
-            this.plotResult(d, `result${i}`)
-          }
-        })
-      }
-    }
-  },
   created: function() {
     this.debounceSimplifyImage = _.debounce(this.simplifyImage, 250);
+    this.debounceMaskResults = _.debounce(this.plotResults, 250);
   },
   mounted() {
+    this.numColors2Match = this.initialNum2Match;
     this.maxScreenWidth = this.$refs.container.clientWidth;
     DMC.forEach(d => {
       d["color"] = chroma(d.hex);
@@ -287,7 +293,7 @@ export default {
       this.matchProgress = 0;
       this.matchedColors = [];
       this.fileLoaded = false;
-      this.numColors2Match = 256;
+      this.numColors2Match = this.initialNum2Match;
 
       this.originalCanvas = document.getElementById('canvas'); // load context of canvas
       var ctx = this.originalCanvas.getContext('2d'); // load context of canvas
@@ -415,17 +421,43 @@ export default {
           }))
           .value();
 
-        // pull out matches to preview
-        this.matchedColors.sort((a, b) => b.count - a.count);
-        this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
-        this.matches2Preview = this.matchedColors.slice(0, this.numMatches);
-
-        // plot the small multiples preview
-        this.matches2Preview.map((color, idx) => this.plotResult(color, idx));
+        // // pull out matches to preview
+        // this.matchedColors.sort((a, b) => b.count - a.count);
+        // this.matches2Preview = this.matchedColors.slice(0, this.numMatches);
+        //
+        // // plot the small multiples preview
+        // this.matches2Preview.map((color, idx) => this.plotResult(color, idx));
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+
+        // plot the results
+        this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
+        this.plotResults();
       });
+    },
+    plotResults() {
+      let pixels = new Array(this.simplifiedImagePixels.length * 4).fill(0);
+
+      this.matchedColors.filter(d => this.selectedIDs.includes(d.dmc_id)).forEach(color => {
+        color.idx.forEach(i => {
+          pixels[+i * 4] = color.dmc_rgb[0];
+          pixels[+i * 4 + 1] = color.dmc_rgb[1];
+          pixels[+i * 4 + 2] = color.dmc_rgb[2];
+          pixels[+i * 4 + 3] = 255;
+        })
+      })
+
+      // initial load
+      if (!this.resultCtx) {
+        var canvas = document.getElementById("result"); // load context of canvas
+        canvas.width = this.imageWidth;
+        canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
+        this.resultCtx = canvas.getContext('2d'); // load context of canvas
+      }
+
+      var img = new ImageData(new Uint8ClampedArray(pixels), this.imageWidth, this.imageHeight);
+      this.resultCtx.putImageData(img, 0, 0);
     },
     plotResult(color, idx) {
       this.$nextTick(function() {
@@ -459,9 +491,8 @@ export default {
 
         // render the scaled version on the real canvas.
         var ctx = canvas.getContext('2d'); // load context of canvas
-        ctx.drawImage(renderer, 0,0, canvas.width, canvas.height);
+        ctx.drawImage(renderer, 0, 0, canvas.width, canvas.height);
       });
-
     }
   }
 }
@@ -496,6 +527,10 @@ td {
 
 .fa-lg {
     font-size: 1rem;
+}
+
+.fa-sm {
+    font-size: 0.85rem;
 }
 
 .btn-outline-secondary {
