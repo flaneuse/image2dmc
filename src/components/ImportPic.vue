@@ -150,7 +150,9 @@
     </div>
 
     <!-- Result preview -->
-    <div id="result-preview">
+    <div id="result-preview" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">
+      <b-form-checkbox v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
+
       <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
         <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm">
           <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
@@ -159,7 +161,8 @@
       </b-form-checkbox-group>
     </div>
 
-    <canvas id="result" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
+<h3 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Matched DMC colors</h3>
+    <canvas id="result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
 
     <!-- <div class="d-flex flex-wrap" id="preview-results">
       <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
@@ -251,6 +254,7 @@ export default {
       numColors2Match: null, // holder for input manipulations
       // numMatches: 10,
       showInputs: true,
+      allSelected: true,
 
       // progress / status
       matchProgress: 0,
@@ -311,6 +315,7 @@ export default {
       this.matchProgress = 0;
       this.matchedColors = [];
       this.fileLoaded = false;
+      this.allSelected = true;
       this.numColors2Match = this.initialNum2Match;
 
       this.originalCanvas = document.getElementById('canvas'); // load context of canvas
@@ -513,6 +518,15 @@ export default {
         var ctx = canvas.getContext('2d'); // load context of canvas
         ctx.drawImage(renderer, 0, 0, canvas.width, canvas.height);
       });
+    },
+    toggleSelected(checked) {
+      console.log(checked)
+      if(checked){
+        this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
+      } else {
+        this.selectedIDs = [];
+      }
+      this.plotResults();
     }
   }
 }
