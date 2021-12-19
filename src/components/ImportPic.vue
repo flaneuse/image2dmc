@@ -21,13 +21,13 @@
     </div>
 
     <!-- averaging -->
-    <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded">
+    <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded && !isLoading">
       <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
       <div class="d-flex align-items-start">
         <!-- <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button> -->
 
         <!-- change amount of averaging -->
-        <div id="input-degree-avg mr-5 d-flex align-items-center" v-if="!isLoading">
+        <div id="input-degree-avg mr-5 d-flex align-items-center">
           <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
             Amount of simplification
           </label>
@@ -115,7 +115,7 @@
 
   <!-- results -->
   <div id="results" class="border-top mt-4 pt-4 ">
-    <div class="d-flex align-items-center mb-4" v-if="filteredMatches.length">
+    <div class="d-flex align-items-center mb-4" v-if="matchedColors.length">
       <div class="d-flex flex-column align-items-start">
         <h2>Matched colors</h2>
         <a href="#matched-table">
@@ -133,17 +133,17 @@
     </div>
 
     <div class="d-flex flex-wrap" id="preview-results">
-      <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[filteredMatches.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
-        <div class="d-flex" v-if="filteredMatches.length && filteredMatches[rIdx]">
-          <div :style="{width: '50px', height: '25px', background: filteredMatches[rIdx].dmc_hex}">
+      <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
+        <div class="d-flex" v-if="matches2Preview.length && matches2Preview[rIdx]">
+          <div :style="{width: '50px', height: '25px', background: matches2Preview[rIdx].dmc_hex}">
           </div>
-          <h4 class="m-0 ml-2"><span class="font-weight-bold">DMC {{filteredMatches[rIdx]["dmc_id"]}}</span> {{filteredMatches[rIdx]["dmc_name"]}}</h4>
+          <h4 class="m-0 ml-2"><span class="font-weight-bold">DMC {{matches2Preview[rIdx]["dmc_id"]}}</span> {{matches2Preview[rIdx]["dmc_name"]}}</h4>
         </div>
         <canvas :id="'result' + rIdx"></canvas>
       </div>
     </div>
 
-    <template v-if="filteredMatches.length">
+    <template v-if="matchedColors.length">
       <table id="matched-table">
         <thead>
           <tr class="font-weight-bold text-left">
@@ -166,7 +166,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="(color, idx) in filteredMatches" :key="idx" class="text-left">
+          <tr v-for="(color, idx) in matchedColors" :key="idx" class="text-left">
             <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
             </td>
             <td class="h4">
@@ -215,11 +215,11 @@ export default {
       imageWidth: 80,
       imageHeight: 80,
       maxScreenWidth: 80,
-      colorsPerSec: 500,
+      colorsPerSec: 200,
 
       // inputs
       numColors2Match: 256,
-      numMatches: 50,
+      numMatches: 10,
 
       // progress / status
       matchProgress: 0,
@@ -234,13 +234,11 @@ export default {
       // images
       simplifiedImagePixels: [],
       simplifiedColorArr: [],
-      matchedColors: []
+      matchedColors: [],
+      matches2Preview: []
     }
   },
   computed: {
-    filteredMatches() {
-      return (this.matchedColors.slice(0, this.numMatches))
-    },
     estimatedTime() {
       const est = this.numColors2Match / this.colorsPerSec;
       if (est < 0.05) {
@@ -281,23 +279,6 @@ export default {
     clearTimeout(this.timer);
   },
   methods: {
-    plotResult(pixels, id) {
-      var canvas = document.getElementById(id); // load context of canvas
-      if (this.maxScreenWidth > 1000) {
-        canvas.width = this.maxScreenWidth * 0.25;
-      } else if (this.maxScreenWidth > 500) {
-        canvas.width = this.maxScreenWidth * 0.45;
-      } else {
-        canvas.width = this.maxScreenWidth * 0.95;
-      }
-      canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
-
-      var ctx = canvas.getContext('2d'); // load context of canvas
-      var img = pixels;
-
-      var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
-      ctx.putImageData(palette, 0, 0);
-    },
     loadFile(event) {
       this.isLoading = true;
 
@@ -434,21 +415,49 @@ export default {
           }))
           .value();
 
+        // pull out matches to preview
+        this.matchedColors.sort((a, b) => b.count - a.count);
+        this.matches2Preview = this.matchedColors.slice(0, this.numMatches);
+
+        // plot the small multiples preview
+        this.matches2Preview.map((color, idx) => this.plotResult(color, idx));
+
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
-
-        // // result small multiples
-        // this.matchedColorSmMult = this.matchedColors.map(color => {
-        //   let pixels = new Array(this.simplifiedImage.length * 4).fill(0);
-        //   color.idx.forEach(i => {
-        //     pixels[+i * 4] = color.dmc_rgb[0];
-        //     pixels[+i * 4 + 1] = color.dmc_rgb[1];
-        //     pixels[+i * 4 + 2] = color.dmc_rgb[2];
-        //     pixels[+i * 4 + 3] = 255;
-        //   })
-        //   return (pixels);
-        // })
       });
+    },
+    plotResult(color, idx) {
+      this.$nextTick(function() {
+        console.log("DOM updated" + idx)
+        let pixels = new Array(this.simplifiedImagePixels.length * 4).fill(0);
+
+        color.idx.forEach(i => {
+          pixels[+i * 4] = color.dmc_rgb[0];
+          pixels[+i * 4 + 1] = color.dmc_rgb[1];
+          pixels[+i * 4 + 2] = color.dmc_rgb[2];
+          pixels[+i * 4 + 3] = 255;
+        })
+
+        var canvas = document.getElementById(`result${idx}`); // load context of canvas
+        if (this.maxScreenWidth > 1000) {
+          canvas.width = this.maxScreenWidth * 0.25;
+        } else if (this.maxScreenWidth > 500) {
+          canvas.width = this.maxScreenWidth * 0.45;
+        } else {
+          canvas.width = this.maxScreenWidth * 0.95;
+        }
+        canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
+        console.log(canvas.width)
+        console.log(canvas.height)
+
+
+        var ctx = canvas.getContext('2d'); // load context of canvas
+        var img = pixels;
+
+        var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
+        ctx.putImageData(palette, 0, 0);
+      });
+
     }
   }
 }
