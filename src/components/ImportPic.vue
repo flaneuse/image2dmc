@@ -7,12 +7,20 @@
   <!-- select file & match button -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
     <!-- select file -->
-    <div class="d-flex flex-column align-items-start my-2">
-      <h5 class="primary-color font-weight-bold m-0  mb-2">1 Select file</h5>
-      <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
+    <div class="d-flex align-items-center">
+      <div class="d-flex flex-column align-items-start my-2">
+        <h5 class="primary-color font-weight-bold m-0">1 Select file</h5>
+        <b-form-file type="file" id="file" accept="image/*" @change="loadFile" />
+      </div>
+
+      <!-- loading icon -->
+      <button class="btn btn-light ml-4 mt-4" type="button" disabled v-if="isLoading">
+        <span class="spinner-grow spinner-grow-sm text-info" role="status" aria-hidden="true"></span>
+        Loading...
+      </button>
     </div>
 
-<!-- averaging -->
+    <!-- averaging -->
     <div class="d-flex flex-column align-items-start my-2" v-if="fileLoaded">
       <h5 class="primary-color font-weight-bold m-0  mb-2">2 Adjust simplification</h5>
       <div class="d-flex align-items-start">
@@ -37,7 +45,7 @@
       </div>
     </div>
 
-<!-- match button w/ progress bar -->
+    <!-- match button w/ progress bar -->
     <div v-if="fileLoaded" class="d-flex flex-column align-items-start my-2">
       <h5 class="primary-color font-weight-bold m-0  mb-2">3 Match colors</h5>
       <div class="d-flex flex-wrap">
@@ -65,32 +73,32 @@
     <h3>Previews</h3>
     <div class="d-flex flex-wrap">
 
-    <div id="original-preview">
-      <h5>original image</h5>
-      <canvas id="canvas"></canvas>
-    </div>
+      <div id="original-preview">
+        <h5>original image</h5>
+        <canvas id="canvas"></canvas>
+      </div>
 
-    <div id="average-preview" class="ml-2">
-      <h5>simplified image</h5>
-      <canvas id="preview"></canvas>
+      <div id="average-preview" class="ml-2">
+        <h5>simplified image</h5>
+        <canvas id="preview"></canvas>
 
-      <!-- change amount of averaging -->
-      <div id="input-degree-avg" class="mr-5 d-none d-md-flex align-items-center">
-        <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
-          Amount of simplifcation
-          <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
-        </label>
+        <!-- change amount of averaging -->
+        <div id="input-degree-avg" class="mr-5 d-none d-md-flex align-items-center">
+          <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
+            Amount of simplifcation
+            <span v-if="numColors2Match">{{numColors2Match.toLocaleString()}} colors to match</span>
+          </label>
 
-        <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
-        <div class="d-flex justify-content-between mt-n2">
-          <span>none</span>
-          <span>max</span>
-        </div>
-        <div>
-          Est. time: ~ {{estimatedTime}}
+          <b-form-input id="num-colors" v-model="rgbPrecision" type="range" min="1" max="100" step="1" @change="simplifyImage()"></b-form-input>
+          <div class="d-flex justify-content-between mt-n2">
+            <span>none</span>
+            <span>max</span>
+          </div>
+          <div>
+            Est. time: ~ {{estimatedTime}}
+          </div>
         </div>
       </div>
-    </div>
     </div>
   </div>
 
@@ -99,10 +107,10 @@
   <div id="results" class="border-top mt-4 pt-4 ">
     <div class="d-flex align-items-center mb-4" v-if="filteredMatches.length">
       <div class="d-flex flex-column align-items-start">
-      <h2>Matched colors</h2>
-      <a href="#matched-table">
-        view table
-      </a>
+        <h2>Matched colors</h2>
+        <a href="#matched-table">
+          view table
+        </a>
       </div>
 
       <!-- number of colors -->
@@ -187,23 +195,35 @@ import countBy from "lodash/countBy";
 import groupBy from "lodash/groupBy";
 import * as _ from "lodash";
 import * as d3 from "d3-format";
+import * as RgbQuant from "rgbquant"; // https://www.npmjs.com/package/rgbquant
 
 export default {
   name: 'ImportPic',
   data() {
     return {
+      // constants / placeholders for sizing / calc values
       imageWidth: 80,
       imageHeight: 80,
       maxScreenWidth: 80,
-      rgbPrecision: 5,
-      matchProgress: 0,
       colorsPerSec: 500,
       numColors2Match: null,
+
+      // inputs
+      rgbPrecision: 5,
+      quantileColorNum: 50,
+      numMatches: 20,
+
+      // progress / status
+      matchProgress: 0,
+      isLoading: false,
       isMatching: false,
       fileLoaded: false,
-      numMatches: 20,
-      simplifiedImage: [],
-      originalImage: null,
+
+      // refs
+      originalCanvas: null,
+
+      // images
+      simplifiedImagePixels: [],
       simplifiedColorArr: [],
       matchedColors: []
     }
@@ -226,24 +246,6 @@ export default {
     }
   },
   watch: {
-    simplifiedImage: function() {
-      // plot rounded version
-      if (this.simplifiedImage.length) {
-        var canvas = document.getElementById('preview'); // load context of canvas
-        if(this.maxScreenWidth > 500) {
-          canvas.width = this.maxScreenWidth * 0.45;
-        } else {
-          canvas.width = this.maxScreenWidth * 0.95;
-        }
-        canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
-
-        var ctx = canvas.getContext('2d'); // load context of canvas
-        var img = this.simplifiedImage.map(d => d.rgba.split(",")).flatMap(d => d).map((d, i) => (i + 1) % 4 === 0 ? 255 : +d);
-
-        var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
-        ctx.putImageData(palette, 0, 0);
-      }
-    },
     matchedColorSmMult: function() {
       // plot rounded version
       if (this.matchedColorSmMult.length) {
@@ -267,14 +269,14 @@ export default {
   methods: {
     plotResult(pixels, id) {
       var canvas = document.getElementById(id); // load context of canvas
-      if(this.maxScreenWidth > 1000) {
+      if (this.maxScreenWidth > 1000) {
         canvas.width = this.maxScreenWidth * 0.25;
-      } else if(this.maxScreenWidth > 500) {
+      } else if (this.maxScreenWidth > 500) {
         canvas.width = this.maxScreenWidth * 0.45;
       } else {
         canvas.width = this.maxScreenWidth * 0.95;
       }
-      canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
+      canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
 
       var ctx = canvas.getContext('2d'); // load context of canvas
       var img = pixels;
@@ -283,46 +285,40 @@ export default {
       ctx.putImageData(palette, 0, 0);
     },
     loadFile(event) {
+      this.isLoading = true;
+
       // resetting the values on new file load.
       this.isMatching = false;
       this.matchProgress = 0;
       this.matchedColors = [];
       this.fileLoaded = false;
 
-      var canvas = document.getElementById('canvas'); // load context of canvas
-      var ctx = canvas.getContext('2d'); // load context of canvas
+      this.originalCanvas = document.getElementById('canvas'); // load context of canvas
+      var ctx = this.originalCanvas.getContext('2d'); // load context of canvas
       var img = new Image();
       img.src = URL.createObjectURL(event.target.files[0]); // use first selected image from input element
 
       img.onload = (e) => {
-        if(this.maxScreenWidth > 500) {
+        // resize to the screen
+        if (this.maxScreenWidth > 500) {
           this.imageWidth = this.maxScreenWidth * 0.45;
-          this.imageHeight = this.imageWidth * (img.height/img.width);
+          this.imageHeight = this.imageWidth * (img.height / img.width);
         } else {
           this.imageWidth = this.maxScreenWidth * 0.95;
-          this.imageHeight = this.imageWidth * (img.height/img.width);
+          this.imageHeight = this.imageWidth * (img.height / img.width);
         }
 
-        canvas.width = this.imageWidth;
-        canvas.height = this.imageHeight;
+        // resize canvas to image
+        this.originalCanvas.width = this.imageWidth;
+        this.originalCanvas.height = this.imageHeight;
 
         ctx.drawImage(img, 0, 0, this.imageWidth, this.imageHeight); // draw the image to the canvas
-        this.originalImage = ctx.getImageData(0, 0, this.imageWidth, this.imageHeight);
 
         this.simplifyImage();
 
         // allow color matching to happen
         this.fileLoaded = true;
       }
-    },
-    roundRGBA(arr, idx) {
-      return ({
-        idx: idx,
-        rgba: `${this.round(arr[0])},${this.round(arr[1])},${this.round(arr[2])},${this.round(arr[3])/255}`
-      })
-    },
-    round(value) {
-      return Math.ceil(value / this.rgbPrecision) * this.rgbPrecision;
     },
     calcDist(color) {
       DMC.forEach(d => {
@@ -335,15 +331,38 @@ export default {
       return (closestColor)
     },
     simplifyImage() {
+      this.isLoading = true;
       this.isMatching = false;
-      // split into RGBA values
-      let pixels = chunk(this.originalImage.data, 4);
 
-      // round the RGB values to the nearest 5 units, to reduce the number of duplicate calculations to make.
-      this.simplifiedImage = pixels.map((d, i) => this.roundRGBA(d, i));
+      let q = new RgbQuant({
+        colors: this.quantileColorNum
+      });
+      q.sample(this.originalCanvas);
+      let simplifiedImage = q.reduce(this.originalCanvas);
+
+      // plot rounded version
+      var canvas = document.getElementById('preview'); // load context of canvas
+
+      canvas.width = this.imageWidth;
+      canvas.height = this.imageHeight;
+
+      var ctx = canvas.getContext('2d'); // load context of canvas
+
+      var palette = new ImageData(new Uint8ClampedArray(simplifiedImage), this.imageWidth, this.imageHeight)
+      ctx.putImageData(palette, 0, 0);
+
+
+      const simplifiedChunks = chunk(simplifiedImage, 4);
+
+      this.simplifiedImagePixels = simplifiedChunks.map((d, i) => {
+        return ({
+          idx: i,
+          rgba: d
+        })
+      })
 
       // count the number of occurrences of RGBA values, to reduce to single values to compare.
-      this.simplifiedColorArr = _(this.simplifiedImage).groupBy("rgba")
+      this.simplifiedColorArr = _(this.simplifiedImagePixels).groupBy("rgba")
         .map((values, key) => ({
           idx: values.map(d => d.idx),
           count: values.length,
@@ -353,9 +372,10 @@ export default {
 
       this.numColors2Match = this.simplifiedColorArr.length;
 
-
       // sort high to low
       this.simplifiedColorArr.sort((a, b) => b.count - a.count);
+
+      this.isLoading = false;
     },
     calcMatch(d, i) {
       return new Promise((resolve, reject) => {
@@ -393,7 +413,7 @@ export default {
             idx: values.flatMap(d => d.idx),
             count: sumBy(values, "pixel_count"),
             score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
-            pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImage.length)
+            pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImagePixels.length)
           }))
           .value();
 
@@ -439,11 +459,10 @@ td {
 }
 
 @media (max-width: 420px) {
-  .w-400px {
-      width: 200px;
-  }
+    .w-400px {
+        width: 200px;
+    }
 }
-
 
 .fa-lg {
     font-size: 1rem;
