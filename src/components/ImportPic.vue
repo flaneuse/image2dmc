@@ -1,5 +1,46 @@
 <template>
 <div class="m-3 m-md-5" ref="container">
+<!--
+  <template>
+    <div>
+      <b-form-group>
+        <template #label>
+          <b>Choose your flavours:</b><br>
+          <b-form-checkbox v-model="allSelected" :indeterminate="indeterminate" aria-describedby="flavours" aria-controls="flavours" @change="toggleAll">
+            {{ allSelected ? 'Un-select All' : 'Select All' }}
+          </b-form-checkbox>
+        </template>
+
+        <b-form-checkbox-group id="flavors" v-model="selected" :options="flavours" :aria-describedby="ariaDescribedby" name="flavors" class="ml-4" aria-label="Individual flavours" stacked></b-form-checkbox-group>
+      </b-form-group>
+
+      <div>
+        Selected: <strong>{{ selected }}</strong><br>
+        All Selected: <strong>{{ allSelected }}</strong><br>
+        Indeterminate: <strong>{{ indeterminate }}</strong>
+      </div>
+    </div>
+  </template> -->
+
+  <b-form-group v-for="(group, gIdx) in groupOptions">
+    <template #label>
+      <b-form-checkbox v-model="group.selected" :indeterminate="group.indeterminate" :aria-describedby="group" :aria-controls="group" @change="toggleAll(group)">
+        {{ group.selected ? 'Deselect all ' + group.name : 'Select all ' + group.name }}
+      </b-form-checkbox>
+
+      <b-form-checkbox-group :id="group.name + '-group'" v-model="selectedIDs" :name="group.name + 'IDs'" class="d-flex flex-wrap" @change="debounceMaskResults">
+        <b-form-checkbox v-for="(color, idx) in matchedOptions[group.name]" :value="color.dmc_id" class="fa-sm">
+          <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
+          {{color.dmc_name}} ({{color.dmc_id}})
+        </b-form-checkbox>
+      </b-form-checkbox-group>
+
+    </template>
+
+  </b-form-group>
+
+
+
   <h1 class="my-5">Happy Christmas, Mom!</h1>
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
@@ -7,7 +48,8 @@
   <div class="accordion" role="tablist" id="file-selection">
     <b-card no-body class="mb-1">
       <b-card-header header-tag="header" class="p-1" role="tab">
-        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file inputs</b-button>
+        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file
+          inputs</b-button>
       </b-card-header>
       <b-collapse id="accordion-inputs" v-model="showInputs" accordion="my-accordion" role="tabpanel">
         <b-card-body>
@@ -240,6 +282,10 @@ export default {
   name: 'ImportPic',
   data() {
     return {
+      selected: [],
+      allSelected: false,
+      indeterminate: false,
+
       // constants / placeholders for sizing / calc values
       imageWidth: 80,
       imageHeight: 80,
@@ -267,8 +313,10 @@ export default {
       simplifiedImagePixels: [],
       simplifiedColorArr: [],
       matchedColors: [],
+      matchedOptions: [],
       matchedPixelArr: [],
       matches2Preview: [],
+      groupOptions: [],
       selectedIDs: []
     }
   },
@@ -302,7 +350,26 @@ export default {
   beforeDestroy() {
     clearTimeout(this.timer);
   },
+  watch: {
+    selected(newValue, oldValue) {
+      // Handle changes in individual flavour checkboxes
+      if (newValue.length === 0) {
+        this.indeterminate = false
+        this.allSelected = false
+      } else if (newValue.length === this.flavours.length) {
+        this.indeterminate = false
+        this.allSelected = true
+      } else {
+        this.indeterminate = true
+        this.allSelected = false
+      }
+    }
+  },
   methods: {
+    toggleAll(checked) {
+      console.log(checked);
+      // this.matchedOptions.
+    },
     loadFile(event) {
       this.isLoading = true;
 
@@ -411,6 +478,7 @@ export default {
           obj["closest_hex"] = closest.hex;
           obj["closest_rgb"] = closest.rgb;
           obj["closest_hsv"] = closest.hsv;
+          obj["closest_group"] = closest.group;
           obj["closest_name"] = closest.name;
           obj["closest_dmc_id"] = closest.dmc_id;
           obj["closest_score"] = closest.dist;
@@ -428,6 +496,7 @@ export default {
             values: values,
             dmc_id: values[0]["closest_dmc_id"],
             dmc_name: values[0]["closest_name"],
+            dmc_group: values[0]["closest_group"],
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
             dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
@@ -451,6 +520,17 @@ export default {
 
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
+
+        this.matchedOptions = _(this.matchedColors).groupBy("dmc_group").value();
+        // console.log(this.matchedOptions)
+        //
+        this.groupOptions = Object.keys(this.matchedOptions).map(d => {return({
+          name: d,
+          indeterminate: false,
+          selected: true,
+          ids: this.matchedOptions[d]
+        })});
+
         this.plotResults();
 
         this.showInputs = false;

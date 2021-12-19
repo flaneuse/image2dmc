@@ -76,7 +76,7 @@ ggplot(colors %>% filter(key %in% c(
 
 df %>% 
   filter(! is.na(hex_8824_scan)) %>% 
-  select(dmc_id, name, hex = hex_8824_scan) %>% 
+  select(dmc_id, name, hex = hex_8824_scan, group = group) %>% 
   jsonlite::write_json("~/GitHub/image2dmc/src/assets/dmc_colors_ldh.json")
 
 df[df %>% select(hex_8824) %>% duplicated(), "hex_8824"]
