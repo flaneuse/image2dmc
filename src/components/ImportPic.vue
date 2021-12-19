@@ -27,7 +27,7 @@
         <!-- <b-button @click="matchColors" class="btn-outline-secondary mr-3" :class="{'disabled': isMatching}">crop</b-button> -->
 
         <!-- change amount of averaging -->
-        <div id="input-degree-avg mr-5 d-flex align-items-center">
+        <div id="input-degree-avg mr-5 d-flex align-items-center" v-if="!isLoading">
           <label for="num-colors" class="d-flex justify-content-between mr-2 mb-n2">
             Amount of simplification
           </label>
@@ -40,8 +40,7 @@
 
           <div class="d-flex flex-column mt-2">
             <span class="d-flex">
-              <b-form-input id="num-colors" style="width: 75px"
-              v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+              <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
               <span class="ml-3">colors to match</span>
             </span>
             Est. time: ~ {{estimatedTime}}
@@ -52,7 +51,7 @@
     </div>
 
     <!-- match button w/ progress bar -->
-    <div v-if="fileLoaded" class="d-flex flex-column align-items-start my-2">
+    <div v-if="fileLoaded && !isLoading" class="d-flex flex-column align-items-start my-2">
       <h5 class="primary-color font-weight-bold m-0  mb-2">3 Match colors</h5>
       <div class="d-flex flex-wrap">
         <!-- execute -->
@@ -102,8 +101,7 @@
 
           <div class="d-flex flex-column mt-2">
             <span class="d-flex">
-              <b-form-input id="num-colors" style="width: 75px"
-              v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
+              <b-form-input id="num-colors" style="width: 75px" v-model="numColors2Match" type="number" min="1" max="512" step="1" @change="debounceSimplifyImage()"></b-form-input>
               <span class="ml-3">colors to match</span>
             </span>
             Est. time: ~ {{estimatedTime}}
@@ -221,7 +219,7 @@ export default {
 
       // inputs
       numColors2Match: 256,
-      numMatches: 20,
+      numMatches: 50,
 
       // progress / status
       matchProgress: 0,
@@ -231,6 +229,7 @@ export default {
 
       // refs
       originalCanvas: null,
+      timer: null,
 
       // images
       simplifiedImagePixels: [],
@@ -273,11 +272,13 @@ export default {
   mounted() {
     this.maxScreenWidth = this.$refs.container.clientWidth;
     DMC.forEach(d => {
-      // d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
-      // d["hex"] = d.color.hex();
       d["color"] = chroma(d.hex);
       d["rgb"] = d.color.rgb();
+      d["hsv"] = d.color.hsv();
     })
+  },
+  beforeDestroy() {
+    clearTimeout(this.timer);
   },
   methods: {
     plotResult(pixels, id) {
@@ -349,46 +350,46 @@ export default {
       this.isMatching = false;
       this.timer = setTimeout(() => {
 
-      let q = new RgbQuant({
-        colors: this.numColors2Match
-      });
-      q.sample(this.originalCanvas);
-      let simplifiedImage = q.reduce(this.originalCanvas);
+        let q = new RgbQuant({
+          colors: this.numColors2Match
+        });
+        q.sample(this.originalCanvas);
+        let simplifiedImage = q.reduce(this.originalCanvas);
 
-      // plot rounded version
-      var canvas = document.getElementById('preview'); // load context of canvas
+        // plot rounded version
+        var canvas = document.getElementById('preview'); // load context of canvas
 
-      canvas.width = this.imageWidth;
-      canvas.height = this.imageHeight;
+        canvas.width = this.imageWidth;
+        canvas.height = this.imageHeight;
 
-      var ctx = canvas.getContext('2d'); // load context of canvas
+        var ctx = canvas.getContext('2d'); // load context of canvas
 
-      var palette = new ImageData(new Uint8ClampedArray(simplifiedImage), this.imageWidth, this.imageHeight)
-      ctx.putImageData(palette, 0, 0);
+        var palette = new ImageData(new Uint8ClampedArray(simplifiedImage), this.imageWidth, this.imageHeight)
+        ctx.putImageData(palette, 0, 0);
 
 
-      const simplifiedChunks = chunk(simplifiedImage, 4);
+        const simplifiedChunks = chunk(simplifiedImage, 4);
 
-      this.simplifiedImagePixels = simplifiedChunks.map((d, i) => {
-        return ({
-          idx: i,
-          rgba: d
+        this.simplifiedImagePixels = simplifiedChunks.map((d, i) => {
+          return ({
+            idx: i,
+            rgba: d
+          })
         })
-      })
 
-      // count the number of occurrences of RGBA values, to reduce to single values to compare.
-      this.simplifiedColorArr = _(this.simplifiedImagePixels).groupBy("rgba")
-        .map((values, key) => ({
-          idx: values.map(d => d.idx),
-          count: values.length,
-          id: key
-        }))
-        .value()
+        // count the number of occurrences of RGBA values, to reduce to single values to compare.
+        this.simplifiedColorArr = _(this.simplifiedImagePixels).groupBy("rgba")
+          .map((values, key) => ({
+            idx: values.map(d => d.idx),
+            count: values.length,
+            id: key
+          }))
+          .value()
 
-      // sort high to low
-      this.simplifiedColorArr.sort((a, b) => b.count - a.count);
+        // sort high to low
+        this.simplifiedColorArr.sort((a, b) => b.count - a.count);
 
-      this.isLoading = false;
+        this.isLoading = false;
       }, 1000)
     },
     calcMatch(d, i) {
@@ -404,7 +405,7 @@ export default {
           obj["pixel_count"] = d.count;
           obj["closest_hex"] = closest.hex;
           obj["closest_rgb"] = closest.rgb;
-          // obj["closest_rgb"] = [closest.r, closest.g, closest.b];
+          obj["closest_hsv"] = closest.hsv;
           obj["closest_name"] = closest.name;
           obj["closest_dmc_id"] = closest.dmc_id;
           obj["closest_score"] = closest.dist;
@@ -424,6 +425,8 @@ export default {
             dmc_name: values[0]["closest_name"],
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
+            dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
+            dmc_saturation: Math.round(values[0]["closest_hsv"][1] * 10),
             idx: values.flatMap(d => d.idx),
             count: sumBy(values, "pixel_count"),
             score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
@@ -432,7 +435,7 @@ export default {
           .value();
 
         // sort descendingly by count
-        this.matchedColors.sort((a, b) => b.count - a.count);
+        this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
 
         // // result small multiples
         // this.matchedColorSmMult = this.matchedColors.map(color => {
