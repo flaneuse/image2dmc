@@ -3,7 +3,6 @@
   <h1 class="my-5">Happy Christmas, Mom!</h1>
 
   <h3 class="text-left">Select an image to match to DMC embroidery floss colors</h3>
-  <canvas id="result"></canvas>
 
   <!-- select file & match button -->
   <div id="input-opts" class="d-flex flex-wrap mb-3 align-items-start justify-content-between">
@@ -125,12 +124,12 @@
       </div>
 
       <!-- number of colors -->
-      <div class="ml-5 d-flex justify-content-end">
+      <!-- <div class="ml-5 d-flex justify-content-end">
         <div id="input-num-colors mr-5 text-left d-flex w-25">
           <label for="num-colors" class="flex-shrink-0 mr-2 m-0">Number of colors</label>
           <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
         </div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Result preview -->
@@ -141,8 +140,9 @@
           {{color.dmc_name}} ({{color.dmc_id}})
         </b-form-checkbox>
       </b-form-checkbox-group>
-
     </div>
+
+    <canvas id="result" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
 
     <!-- <div class="d-flex flex-wrap" id="preview-results">
       <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
