@@ -376,7 +376,7 @@ export default {
           obj["closest_dmc_id"] = closest.dmc_id;
           obj["closest_score"] = closest.dist;
           resolve(obj)
-        }, 0)
+        }, 100)
       });
     },
     matchColors() {
