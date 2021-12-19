@@ -218,7 +218,7 @@ export default {
       colorsPerSec: 200,
 
       // inputs
-      numColors2Match: 256,
+      numColors2Match: 50,
       numMatches: 10,
 
       // progress / status
@@ -417,6 +417,7 @@ export default {
 
         // pull out matches to preview
         this.matchedColors.sort((a, b) => b.count - a.count);
+        this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
         this.matches2Preview = this.matchedColors.slice(0, this.numMatches);
 
         // plot the small multiples preview
@@ -428,7 +429,6 @@ export default {
     },
     plotResult(color, idx) {
       this.$nextTick(function() {
-        console.log("DOM updated" + idx)
         let pixels = new Array(this.simplifiedImagePixels.length * 4).fill(0);
 
         color.idx.forEach(i => {
@@ -447,15 +447,19 @@ export default {
           canvas.width = this.maxScreenWidth * 0.95;
         }
         canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
-        console.log(canvas.width)
-        console.log(canvas.height)
 
+        var img = new ImageData(new Uint8ClampedArray(pixels), this.imageWidth, this.imageHeight)
 
+        // generate a second canvas as a temp canvas to render the full pixel version
+        var renderer = document.createElement('canvas');
+        renderer.width = img.width;
+        renderer.height = img.height;
+        // render our ImageData on this canvas
+        renderer.getContext('2d').putImageData(img, 0, 0);
+
+        // render the scaled version on the real canvas.
         var ctx = canvas.getContext('2d'); // load context of canvas
-        var img = pixels;
-
-        var palette = new ImageData(new Uint8ClampedArray(img), this.imageWidth, this.imageHeight)
-        ctx.putImageData(palette, 0, 0);
+        ctx.drawImage(renderer, 0,0, canvas.width, canvas.height);
       });
 
     }
