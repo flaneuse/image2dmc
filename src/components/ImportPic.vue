@@ -194,7 +194,7 @@ export default {
     return {
       imageWidth: 80,
       imageHeight: 80,
-      maxWidth: 80,
+      maxScreenWidth: 80,
       rgbPrecision: 5,
       matchProgress: 0,
       colorsPerSec: 500,
@@ -205,9 +205,7 @@ export default {
       simplifiedImage: [],
       originalImage: null,
       simplifiedColorArr: [],
-      matchedColors: [],
-      matchedColorArr: [],
-      matchedColorSmMult: []
+      matchedColors: []
     }
   },
   computed: {
@@ -232,10 +230,10 @@ export default {
       // plot rounded version
       if (this.simplifiedImage.length) {
         var canvas = document.getElementById('preview'); // load context of canvas
-        if(this.maxWidth > 500) {
-          canvas.width = this.maxWidth * 0.45;
+        if(this.maxScreenWidth > 500) {
+          canvas.width = this.maxScreenWidth * 0.45;
         } else {
-          canvas.width = this.maxWidth * 0.95;
+          canvas.width = this.maxScreenWidth * 0.95;
         }
         canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
 
@@ -258,7 +256,7 @@ export default {
     }
   },
   mounted() {
-    this.maxWidth = this.$refs.container.clientWidth;
+    this.maxScreenWidth = this.$refs.container.clientWidth;
     DMC.forEach(d => {
       // d["color"] = chroma(`rgb(${d.r}, ${d.g}, ${d.b})`);
       // d["hex"] = d.color.hex();
@@ -269,12 +267,12 @@ export default {
   methods: {
     plotResult(pixels, id) {
       var canvas = document.getElementById(id); // load context of canvas
-      if(this.maxWidth > 1000) {
-        canvas.width = this.maxWidth * 0.25;
-      } else if(this.maxWidth > 500) {
-        canvas.width = this.maxWidth * 0.45;
+      if(this.maxScreenWidth > 1000) {
+        canvas.width = this.maxScreenWidth * 0.25;
+      } else if(this.maxScreenWidth > 500) {
+        canvas.width = this.maxScreenWidth * 0.45;
       } else {
-        canvas.width = this.maxWidth * 0.95;
+        canvas.width = this.maxScreenWidth * 0.95;
       }
       canvas.height = canvas.width * (this.imageHeight/this.imageWidth);
 
@@ -297,11 +295,11 @@ export default {
       img.src = URL.createObjectURL(event.target.files[0]); // use first selected image from input element
 
       img.onload = (e) => {
-        if(this.maxWidth > 500) {
-          this.imageWidth = this.maxWidth * 0.45;
+        if(this.maxScreenWidth > 500) {
+          this.imageWidth = this.maxScreenWidth * 0.45;
           this.imageHeight = this.imageWidth * (img.height/img.width);
         } else {
-          this.imageWidth = this.maxWidth * 0.95;
+          this.imageWidth = this.maxScreenWidth * 0.95;
           this.imageHeight = this.imageWidth * (img.height/img.width);
         }
 
@@ -382,10 +380,9 @@ export default {
     matchColors() {
       this.isMatching = true;
 
-      Promise.all(this.simplifiedColorArr.map((d, i) => this.calcMatch(d, i))).then((values) => {
-        this.matchedColorArr = values;
+      Promise.all(this.simplifiedColorArr.map((d, i) => this.calcMatch(d, i))).then((matchedColorArr) => {
         // sum number of occurrences of the DMC color
-        this.matchedColors = _(this.matchedColorArr).groupBy("closest_dmc_id")
+        this.matchedColors = _(matchedColorArr).groupBy("closest_dmc_id")
           .map((values, i) => ({
             values: values,
             dmc_id: values[0]["closest_dmc_id"],
