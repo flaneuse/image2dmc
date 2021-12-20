@@ -7,7 +7,8 @@
   <div class="accordion" role="tablist" id="file-selection">
     <b-card no-body class="mb-1">
       <b-card-header header-tag="header" class="p-1" role="tab">
-        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file inputs</b-button>
+        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file
+          inputs</b-button>
       </b-card-header>
       <b-collapse id="accordion-inputs" v-model="showInputs" accordion="my-accordion" role="tabpanel">
         <b-card-body>
@@ -154,15 +155,18 @@
       <b-form-checkbox v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
 
       <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
-        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm">
+        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm mb-2">
           <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
-          {{color.dmc_name}} ({{color.dmc_id}})
+          {{color.dmc_name}} (DMC {{color.dmc_id}}; {{color.pct}})
         </b-form-checkbox>
       </b-form-checkbox-group>
     </div>
 
-<h3 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Matched DMC colors</h3>
+    <h5 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Matched DMC colors</h5>
     <canvas id="result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
+
+    <h5 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Original image</h5>
+    <canvas id="original-result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
 
     <!-- <div class="d-flex flex-wrap" id="preview-results">
       <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
@@ -264,7 +268,6 @@ export default {
 
       // refs
       originalCanvas: null,
-      resultCtx: null,
       timer: null,
 
       // images
@@ -318,8 +321,11 @@ export default {
       this.allSelected = true;
       this.numColors2Match = this.initialNum2Match;
 
-      this.originalCanvas = document.getElementById('canvas'); // load context of canvas
+      this.originalCanvas = document.getElementById('canvas'); // load ref to canvas
       var ctx = this.originalCanvas.getContext('2d'); // load context of canvas
+      const resultCanvas = document.getElementById('original-result'); // load ref to canvas
+      var ctx_result = resultCanvas.getContext('2d'); // load context of canvas
+
       var img = new Image();
       img.src = URL.createObjectURL(event.target.files[0]); // use first selected image from input element
 
@@ -336,8 +342,11 @@ export default {
         // resize canvas to image
         this.originalCanvas.width = this.imageWidth;
         this.originalCanvas.height = this.imageHeight;
+        resultCanvas.width = this.imageWidth;
+        resultCanvas.height = this.imageHeight;
 
         ctx.drawImage(img, 0, 0, this.imageWidth, this.imageHeight); // draw the image to the canvas
+        ctx_result.drawImage(img, 0, 0, this.imageWidth, this.imageHeight); // draw the image to the canvas
 
         this.simplifyImage();
 
@@ -473,16 +482,13 @@ export default {
         })
       })
 
-      // initial load
-      if (!this.resultCtx) {
-        var canvas = document.getElementById("result"); // load context of canvas
-        canvas.width = this.imageWidth;
-        canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
-        this.resultCtx = canvas.getContext('2d'); // load context of canvas
-      }
+      const canvas = document.getElementById("result"); // load context of canvas
+      canvas.width = this.imageWidth;
+      canvas.height = canvas.width * (this.imageHeight / this.imageWidth);
+      const resultCtx = canvas.getContext('2d'); // load context of canvas
 
       var img = new ImageData(new Uint8ClampedArray(pixels), this.imageWidth, this.imageHeight);
-      this.resultCtx.putImageData(img, 0, 0);
+      resultCtx.putImageData(img, 0, 0);
     },
     plotResult(color, idx) {
       this.$nextTick(function() {
@@ -520,8 +526,7 @@ export default {
       });
     },
     toggleSelected(checked) {
-      console.log(checked)
-      if(checked){
+      if (checked) {
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
       } else {
         this.selectedIDs = [];
