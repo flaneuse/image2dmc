@@ -184,27 +184,37 @@
     <table id="matched-table">
       <thead>
         <tr class="font-weight-bold text-left">
-          <td>
-
+          <td @click="changeSort('color')" class="d-flex flex-shrink-0 align-items-center">
+            color
+            <b-icon class="ml-1" icon="sort-down" variant="secondary" v-if="sortVar == 'color' && sortAsc"></b-icon>
+            <b-icon class="ml-1" icon="sort-up-alt" variant="secondary" v-if="sortVar == 'color' && !sortAsc"></b-icon>
           </td>
-          <td>
+          <td @click="changeSort('dmc_id')">
             DMC code
+            <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'dmc_id' && sortAsc"></b-icon>
+            <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'dmc_id' && !sortAsc"></b-icon>
           </td>
-          <td>
+          <td @click="changeSort('dmc_name')">
             name
+            <b-icon icon="sort-alpha-down" variant="secondary" v-if="sortVar == 'dmc_name' && sortAsc"></b-icon>
+            <b-icon icon="sort-alpha-up-alt" variant="secondary" v-if="sortVar == 'dmc_name' && !sortAsc"></b-icon>
           </td>
-          <td>
+          <td @click="changeSort('pct')">
             Percent of image
+            <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'pct' && sortAsc"></b-icon>
+            <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'pct' && !sortAsc"></b-icon>
           </td>
-          <td>
+          <td @click="changeSort('score')">
             Avg. score (lower is a closer match)
+            <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'score' && sortAsc"></b-icon>
+            <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'score' && !sortAsc"></b-icon>
           </td>
         </tr>
       </thead>
 
       <tbody>
         <tr v-for="(color, idx) in matchedColors" :key="idx" class="text-left">
-          <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
+          <td :style="{width: '74px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
           </td>
           <td class="h4">
             {{color.dmc_id}}
@@ -217,6 +227,9 @@
           </td>
           <td>
             {{color.score}}
+            <small v-if="color.score > scoreThreshold">
+              <b-icon icon="exclamation-circle-fill" variant="warning" class="mx-2"></b-icon>poor match
+            </small>
           </td>
         </tr>
       </tbody>
@@ -251,12 +264,15 @@ export default {
       imageHeight: 80,
       maxScreenWidth: 80,
       colorsPerSec: 200,
+      scoreThreshold: 7,
 
       // inputs
       initialNum2Match: 100,
       numColors2Match: null, // holder for input manipulations
       showInputs: true,
       allSelected: true,
+      sortVar: "color",
+      sortAsc: true,
 
       // progress / status
       matchProgress: 0,
@@ -298,9 +314,9 @@ export default {
   mounted() {
     this.numColors2Match = this.initialNum2Match;
     this.maxScreenWidth = this.$refs.container.clientWidth;
-    console.log(this.maxScreenWidth)
     DMC.forEach(d => {
       d["color"] = chroma(d.hex);
+      d["dmc_id"] = Number.isInteger(+d.dmc_id) ? +d.dmc_id : d.dmc_id;
       d["rgb"] = d.color.rgb();
       d["hsv"] = d.color.hsv();
     })
@@ -523,6 +539,38 @@ export default {
         var ctx = canvas.getContext('2d'); // load context of canvas
         ctx.drawImage(renderer, 0, 0, canvas.width, canvas.height);
       });
+    },
+    changeSort(sortVar) {
+      if(sortVar == "color") {
+        // reverse the direction
+        if(this.sortVar == "color"){
+          if(this.sortAsc){
+            this.matchedColors.sort((a, b) => a.dmc_hue - b.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+          } else {
+            this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+          }
+          // reset the sort direction
+          this.sortAsc = !this.sortAsc;
+        } else {
+          // set to color sorting
+          this.matchedColors.sort((a, b) => a.dmc_hue - b.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+          this.sortVar = "color";
+          this.sortAsc = true;
+        }
+      } else {
+        if (this.sortVar == sortVar) {
+          if(this.sortAsc) {
+            this.matchedColors.sort((a, b) => b[sortVar] < a[sortVar] ? -1 : 1);
+          } else {
+            this.matchedColors.sort((a, b) => a[sortVar] < b[sortVar] ? -1 : 1);
+          }
+          this.sortAsc = !this.sortAsc;
+        } else {
+          this.matchedColors.sort((a, b) => a[sortVar] < b[sortVar] ? -1 : 1);
+          this.sortVar = sortVar;
+          this.sortAsc = true;
+        }
+      }
     },
     toggleSelected(checked) {
       if (checked) {
