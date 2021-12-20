@@ -128,15 +128,12 @@
     </b-card>
   </div>
 
-
-
-
   <!-- results -->
-  <div id="results" class="border-top mt-4 pt-4 ">
+  <div id="results-section" class="border-top mt-4 pt-4 ">
     <div class="d-flex align-items-center mb-4" v-if="matchedColors.length">
-      <div class="d-flex flex-column align-items-start">
+      <div class="d-flex">
         <h2>Matched colors</h2>
-        <a href="#matched-table">
+        <a class="ml-4" href="#matched-table">
           view table
         </a>
       </div>
@@ -144,23 +141,35 @@
 
     <!-- Result preview -->
     <div id="result-preview" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">
+      <h3>Matched image</h3>
+      <small class="text-muted">Check / uncheck colors to see where they are on the image</small>
       <b-form-checkbox v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
 
       <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
-        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm mb-2">
+        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm mb-1">
           <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
           {{color.dmc_name}} (DMC {{color.dmc_id}}; {{color.pct}})
         </b-form-checkbox>
       </b-form-checkbox-group>
     </div>
+  </div>
 
-    <h5 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Matched DMC colors</h5>
-    <canvas id="result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
+  <div id="results-images" class="d-flex flex-wrap" v-if="true">
+    <div class="d-flex flex-column">
+      <h5 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Matched DMC colors</h5>
+      <canvas id="result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
+    </div>
 
-    <h5 :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">Original image</h5>
-    <canvas id="original-result" class="my-4" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]"></canvas>
 
-    <!-- <div class="d-flex flex-wrap" id="preview-results">
+    <div class="ml-2" :class="[matchedColors.length > 0 && maxScreenWidth > 500  ? 'd-flex flex-column' : 'd-none' ]">
+      <h5>Original image</h5>
+      <canvas id="original-result" class="my-4"></canvas>
+    </div>
+  </div>
+
+
+
+  <!-- <div class="d-flex flex-wrap" id="preview-results">
       <div v-for="(result, rIdx) in numMatches" :key=rIdx class="m-2" :class="[matches2Preview.length ? 'd-flex flex-column align-items-start' : 'd-none' ]">
         <div class="d-flex" v-if="matches2Preview.length && matches2Preview[rIdx]">
           <div :style="{width: '50px', height: '25px', background: matches2Preview[rIdx].dmc_hex}">
@@ -171,50 +180,48 @@
       </div>
     </div> -->
 
-    <template v-if="matchedColors.length">
-      <table id="matched-table">
-        <thead>
-          <tr class="font-weight-bold text-left">
-            <td>
+  <div id="results-table-container" v-if="matchedColors.length">
+    <table id="matched-table">
+      <thead>
+        <tr class="font-weight-bold text-left">
+          <td>
 
-            </td>
-            <td>
-              DMC code
-            </td>
-            <td>
-              name
-            </td>
-            <td>
-              Percent of image
-            </td>
-            <td>
-              Avg. score (lower is a closer match)
-            </td>
-          </tr>
-        </thead>
+          </td>
+          <td>
+            DMC code
+          </td>
+          <td>
+            name
+          </td>
+          <td>
+            Percent of image
+          </td>
+          <td>
+            Avg. score (lower is a closer match)
+          </td>
+        </tr>
+      </thead>
 
-        <tbody>
-          <tr v-for="(color, idx) in matchedColors" :key="idx" class="text-left">
-            <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
-            </td>
-            <td class="h4">
-              {{color.dmc_id}}
-            </td>
-            <td>
-              {{color.dmc_name}}
-            </td>
-            <td>
-              {{color.pct}}
-            </td>
-            <td>
-              {{color.score}}
-            </td>
-          </tr>
-        </tbody>
+      <tbody>
+        <tr v-for="(color, idx) in matchedColors" :key="idx" class="text-left">
+          <td :style="{width: '50px', height: '25px', background: color.dmc_hex, border: '4px solid white'}">
+          </td>
+          <td class="h4">
+            {{color.dmc_id}}
+          </td>
+          <td>
+            {{color.dmc_name}}
+          </td>
+          <td>
+            {{color.pct}}
+          </td>
+          <td>
+            {{color.score}}
+          </td>
+        </tr>
+      </tbody>
 
-      </table>
-    </template>
-
+    </table>
   </div>
 
 </div>
@@ -246,7 +253,7 @@ export default {
       colorsPerSec: 200,
 
       // inputs
-      initialNum2Match: 128,
+      initialNum2Match: 100,
       numColors2Match: null, // holder for input manipulations
       showInputs: true,
       allSelected: true,
@@ -291,6 +298,7 @@ export default {
   mounted() {
     this.numColors2Match = this.initialNum2Match;
     this.maxScreenWidth = this.$refs.container.clientWidth;
+    console.log(this.maxScreenWidth)
     DMC.forEach(d => {
       d["color"] = chroma(d.hex);
       d["rgb"] = d.color.rgb();
