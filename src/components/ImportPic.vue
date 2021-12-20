@@ -140,14 +140,6 @@
           view table
         </a>
       </div>
-
-      <!-- number of colors -->
-      <!-- <div class="ml-5 d-flex justify-content-end">
-        <div id="input-num-colors mr-5 text-left d-flex w-25">
-          <label for="num-colors" class="flex-shrink-0 mr-2 m-0">Number of colors</label>
-          <b-form-input id="num-colors" v-model="numMatches" type="number" min="1" placeholder="Number of colors"></b-form-input>
-        </div>
-      </div> -->
     </div>
 
     <!-- Result preview -->
@@ -254,9 +246,8 @@ export default {
       colorsPerSec: 200,
 
       // inputs
-      initialNum2Match: 50,
+      initialNum2Match: 128,
       numColors2Match: null, // holder for input manipulations
-      // numMatches: 10,
       showInputs: true,
       allSelected: true,
 
