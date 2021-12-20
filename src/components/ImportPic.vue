@@ -130,14 +130,20 @@
 
   <!-- results -->
   <div id="results-section" class="border-top mt-4 pt-4 ">
-    <div class="d-flex align-items-center mb-4" v-if="matchedColors.length">
-      <div class="d-flex">
-        <h2>Matched colors</h2>
+    <div class="d-flex flex-column" v-if="matchedColors.length">
+      <div class="d-flex align-items-center">
+        <h2 class="m-0">Matched colors</h2>
         <a class="ml-4" href="#matched-table">
           view table
         </a>
       </div>
+
+      <div class="text-info text-left">
+        Use these colors only as a guide; it's difficult to represent DMC floss colors on the computer.
+      </div>
     </div>
+
+
 
     <!-- Result preview -->
     <div id="result-preview" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">
@@ -463,7 +469,7 @@ export default {
             dmc_saturation: Math.round(values[0]["closest_hsv"][1] * 10),
             idx: values.flatMap(d => d.idx),
             count: sumBy(values, "pixel_count"),
-            score: d3.format("0.2f")(_.meanBy(values, "closest_score")),
+            score: +d3.format("0.2f")(_.meanBy(values, "closest_score")),
             pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImagePixels.length)
           }))
           .value();
@@ -477,6 +483,7 @@ export default {
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+        console.log(this.matchedColors)
 
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);

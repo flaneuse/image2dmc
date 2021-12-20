@@ -1,7 +1,7 @@
 <template>
 <div id="app">
-  <div id="nav">
-    <router-link to="/">Match DMC colors</router-link> |
+  <div id="nav" class="d-flex justify-content-between">
+    <router-link to="/">Match DMC colors</router-link>
     <router-link to="/about">About</router-link>
   </div>
   <router-view />
@@ -30,11 +30,9 @@ $primary-color: #2A97B3;
 
     a {
         font-weight: bold;
-        color: #222;
+        color: #dbf3f3;
 
         &.router-link-exact-active {
-            color: #ffffff;
-            text-decoration: none;
         }
     }
 }
