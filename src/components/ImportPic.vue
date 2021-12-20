@@ -149,7 +149,19 @@
     <div id="result-preview" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">
       <h3>Matched image</h3>
       <small class="text-muted">Check / uncheck colors to see where they are on the image</small>
-      <b-form-checkbox v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
+
+      <div class="d-flex flex-wrap">
+        <b-form-checkbox class="mr-2" v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="redSelected" switch @change="toggleColors(redSelected, 'reds')">{{redSelected ? "Deselect reds" : "Select reds" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="pinkSelected" switch @change="toggleColors(pinkSelected, 'pinks')">{{pinkSelected ? "Deselect pinks" : "Select pinks" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="orangeSelected" switch @change="toggleColors(orangeSelected, 'oranges')">{{orangeSelected ? "Deselect oranges" : "Select oranges" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="yellowSelected" switch @change="toggleColors(yellowSelected, 'yellows')">{{yellowSelected ? "Deselect yellows" : "Select yellows" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="greenSelected" switch @change="toggleColors(greenSelected, 'greens')">{{greenSelected ? "Deselect greens" : "Select greens" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="blueSelected" switch @change="toggleColors(blueSelected, 'blues')">{{blueSelected ? "Deselect blues" : "Select blues" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="purpleSelected" switch @change="toggleColors(purpleSelected, 'purples')">{{purpleSelected ? "Deselect purples" : "Select purples" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="brownSelected" switch @change="toggleColors(brownSelected, 'browns')">{{brownSelected ? "Deselect browns" : "Select browns" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2" v-model="greySelected" switch @change="toggleColors(greySelected, 'greys')">{{greySelected ? "Deselect greys" : "Select greys" }}</b-form-checkbox>
+      </div>
 
       <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
         <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm mb-1">
@@ -215,6 +227,12 @@
             <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'score' && sortAsc"></b-icon>
             <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'score' && !sortAsc"></b-icon>
           </td>
+          <td @click="changeSort('dmc_col')">
+            DMC column
+          </td>
+          <td @click="changeSort('dmc_row')">
+            DMC row
+          </td>
         </tr>
       </thead>
 
@@ -236,6 +254,12 @@
             <small v-if="color.score > scoreThreshold">
               <b-icon icon="exclamation-circle-fill" variant="warning" class="mx-2"></b-icon>poor match
             </small>
+          </td>
+          <td>
+            {{color.dmc_col}}
+          </td>
+          <td>
+            {{color.dmc_row}}
           </td>
         </tr>
       </tbody>
@@ -277,6 +301,15 @@ export default {
       numColors2Match: null, // holder for input manipulations
       showInputs: true,
       allSelected: true,
+      redSelected: true,
+      pinkSelected: true,
+      orangeSelected: true,
+      yellowSelected: true,
+      greenSelected: true,
+      blueSelected: true,
+      purpleSelected: true,
+      brownSelected: true,
+      greySelected: true,
       sortVar: "color",
       sortAsc: true,
 
@@ -447,7 +480,10 @@ export default {
           obj["closest_rgb"] = closest.rgb;
           obj["closest_hsv"] = closest.hsv;
           obj["closest_name"] = closest.name;
+          obj["closest_dmc_group"] = closest.group;
           obj["closest_dmc_id"] = closest.dmc_id;
+          obj["closest_dmc_row"] = closest.dmc_row;
+          obj["closest_dmc_col"] = closest.dmc_col;
           obj["closest_score"] = closest.dist;
           resolve(obj)
         }, 100)
@@ -463,6 +499,9 @@ export default {
             values: values,
             dmc_id: values[0]["closest_dmc_id"],
             dmc_name: values[0]["closest_name"],
+            dmc_col: values[0]["closest_dmc_col"],
+            dmc_row: values[0]["closest_dmc_row"],
+            dmc_group: values[0]["closest_dmc_group"],
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
             dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
@@ -483,7 +522,6 @@ export default {
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
-        console.log(this.matchedColors)
 
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
@@ -548,10 +586,10 @@ export default {
       });
     },
     changeSort(sortVar) {
-      if(sortVar == "color") {
+      if (sortVar == "color") {
         // reverse the direction
-        if(this.sortVar == "color"){
-          if(this.sortAsc){
+        if (this.sortVar == "color") {
+          if (this.sortAsc) {
             this.matchedColors.sort((a, b) => a.dmc_hue - b.dmc_hue || a.dmc_saturation - b.dmc_saturation);
           } else {
             this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
@@ -566,7 +604,7 @@ export default {
         }
       } else {
         if (this.sortVar == sortVar) {
-          if(this.sortAsc) {
+          if (this.sortAsc) {
             this.matchedColors.sort((a, b) => b[sortVar] < a[sortVar] ? -1 : 1);
           } else {
             this.matchedColors.sort((a, b) => a[sortVar] < b[sortVar] ? -1 : 1);
@@ -579,11 +617,31 @@ export default {
         }
       }
     },
+    toggleColors(checked, colorName) {
+      let colorIDs = this.matchedColors.filter(d => d.dmc_group == colorName).map(d => d.dmc_id);
+      if (colorIDs.length) {
+        if (checked) {
+          this.selectedIDs = this.selectedIDs.concat(colorIDs);
+        } else {
+          this.selectedIDs = this.selectedIDs.filter(d => !colorIDs.includes(d));
+        }
+        this.plotResults();
+      }
+    },
     toggleSelected(checked) {
       if (checked) {
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
       } else {
         this.selectedIDs = [];
+        this.redSelected = false;
+        this.pinkSelected = false;
+        this.orangeSelected = false;
+        this.yellowSelected = false;
+        this.greenSelected = false;
+        this.blueSelected = false;
+        this.purpleSelected = false;
+        this.brownSelected = false;
+        this.greySelected = false;
       }
       this.plotResults();
     }
