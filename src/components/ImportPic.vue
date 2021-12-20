@@ -229,9 +229,13 @@
           </td>
           <td @click="changeSort('dmc_col')">
             DMC column
+            <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'dmc_col' && sortAsc"></b-icon>
+            <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'dmc_col' && !sortAsc"></b-icon>
           </td>
           <td @click="changeSort('dmc_row')">
             DMC row
+            <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'dmc_row' && sortAsc"></b-icon>
+            <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'dmc_row' && !sortAsc"></b-icon>
           </td>
         </tr>
       </thead>
@@ -600,6 +604,22 @@ export default {
           // set to color sorting
           this.matchedColors.sort((a, b) => a.dmc_hue - b.dmc_hue || a.dmc_saturation - b.dmc_saturation);
           this.sortVar = "color";
+          this.sortAsc = true;
+        }
+      } else if (sortVar == "dmc_col") {
+        // reverse the direction
+        if (this.sortVar == "dmc_col") {
+          if (this.sortAsc) {
+            this.matchedColors.sort((a, b) => a.dmc_col - b.dmc_col || a.dmc_row - b.dmc_row);
+          } else {
+            this.matchedColors.sort((a, b) => b.dmc_col - a.dmc_col || b.dmc_row - a.dmc_row);
+          }
+          // reset the sort direction
+          this.sortAsc = !this.sortAsc;
+        } else {
+          // set to color sorting
+          this.matchedColors.sort((a, b) => a.dmc_col - b.dmc_col || a.dmc_row - b.dmc_row);
+          this.sortVar = "dmc_col";
           this.sortAsc = true;
         }
       } else {
