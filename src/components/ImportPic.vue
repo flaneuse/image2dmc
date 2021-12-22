@@ -726,9 +726,6 @@ td {
     font-size: 1rem;
 }
 
-.fa-sm {
-    font-size: 0.85rem;
-}
 
 .btn-outline-secondary {
     background: none !important;
