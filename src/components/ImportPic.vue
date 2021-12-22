@@ -150,8 +150,8 @@
       <h3>Matched image</h3>
       <small class="text-muted">Check / uncheck colors to see where they are on the image</small>
 
-      <div class="d-flex flex-wrap">
-        <b-form-checkbox class="mr-2 mb-2" v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
+      <div class="d-flex flex-wrap mb-3">
+        <b-form-checkbox class="mr-2" v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="redSelected" switch @change="toggleColors(redSelected, 'reds')">{{redSelected ? "Deselect reds" : "Select reds" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="pinkSelected" switch @change="toggleColors(pinkSelected, 'pinks')">{{pinkSelected ? "Deselect pinks" : "Select pinks" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="orangeSelected" switch @change="toggleColors(orangeSelected, 'oranges')">{{orangeSelected ? "Deselect oranges" : "Select oranges" }}</b-form-checkbox>
@@ -262,8 +262,8 @@
               <b-icon icon="exclamation-circle-fill" variant="warning" class="mx-2"></b-icon>poor match
             </small>
           </td>
-          <td class="d-flex flex-wrap">
-            <div v-for="(similar, sIdx) in color.dmc_similar" :key="sIdx" class="mr-2 my-1">
+          <td>
+            <div v-for="(similar, sIdx) in color.dmc_similar" :key="sIdx" class="mr-2 mb-1 fa-sm d-inline">
               <span class="mr-1" :style="{width: '25px', height: '20px', background: similar.hex}">&nbsp;&nbsp;&nbsp;&nbsp;</span>{{similar.dmc_id}}
             </div>
           </td>
@@ -485,6 +485,7 @@ export default {
           let obj = {};
           const rgba = d.id.split(",")
           obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
+          const hsv = obj.color.hsv();
           const closest = this.calcDist(obj.color);
           obj["hex"] = obj.color.hex();
           obj["idx"] = d.idx;
@@ -499,6 +500,9 @@ export default {
           obj["closest_dmc_row"] = closest.dmc_row;
           obj["closest_dmc_col"] = closest.dmc_col;
           obj["closest_score"] = closest.dist;
+          obj["closest_hsv_hdiff"] = closest.hsv[0] - hsv[0];
+          obj["closest_hsv_sdiff"] = closest.hsv[1] - hsv[1];
+          obj["closest_hsv_vdiff"] = closest.hsv[2] - hsv[2];
           resolve(obj)
         }, 100)
       });
@@ -517,6 +521,9 @@ export default {
             dmc_row: values[0]["closest_dmc_row"],
             dmc_group: values[0]["closest_dmc_group"],
             dmc_similar: values[0]["closest_dmc_similar"],
+            dmc_hdiff: values[0]["closest_hsv_hdiff"],
+            dmc_sdiff: values[0]["closest_hsv_sdiff"],
+            dmc_vdiff: values[0]["closest_hsv_vdiff"],
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
             dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
@@ -683,6 +690,13 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
+
+table
+{
+    border-collapse:separate;
+    border-spacing:0 0.75rem;
+}
+
 td {
     padding: 0.25rem 0.5rem;
 }
