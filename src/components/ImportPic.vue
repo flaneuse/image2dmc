@@ -151,7 +151,7 @@
       <small class="text-muted">Check / uncheck colors to see where they are on the image</small>
 
       <div class="d-flex flex-wrap">
-        <b-form-checkbox class="mr-2" v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
+        <b-form-checkbox class="mr-2 mb-2" v-model="allSelected" switch @change="toggleSelected">{{allSelected ? "Deselect all" : "Select all" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="redSelected" switch @change="toggleColors(redSelected, 'reds')">{{redSelected ? "Deselect reds" : "Select reds" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="pinkSelected" switch @change="toggleColors(pinkSelected, 'pinks')">{{pinkSelected ? "Deselect pinks" : "Select pinks" }}</b-form-checkbox>
         <b-form-checkbox class="mr-2" v-model="orangeSelected" switch @change="toggleColors(orangeSelected, 'oranges')">{{orangeSelected ? "Deselect oranges" : "Select oranges" }}</b-form-checkbox>
@@ -227,6 +227,9 @@
             <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'score' && sortAsc"></b-icon>
             <b-icon icon="sort-numeric-up-alt" variant="secondary" v-if="sortVar == 'score' && !sortAsc"></b-icon>
           </td>
+          <td>
+            Similar colors
+          </td>
           <td @click="changeSort('dmc_col')">
             DMC column
             <b-icon icon="sort-numeric-down" variant="secondary" v-if="sortVar == 'dmc_col' && sortAsc"></b-icon>
@@ -259,6 +262,11 @@
               <b-icon icon="exclamation-circle-fill" variant="warning" class="mx-2"></b-icon>poor match
             </small>
           </td>
+          <td class="d-flex flex-wrap">
+            <div v-for="(similar, sIdx) in color.dmc_similar" :key="sIdx" class="mr-2 my-1">
+              <span class="mr-1" :style="{width: '25px', height: '20px', background: similar.hex}">&nbsp;&nbsp;&nbsp;&nbsp;</span>{{similar.dmc_id}}
+            </div>
+          </td>
           <td>
             {{color.dmc_col}}
           </td>
@@ -280,7 +288,7 @@ import {
 } from "chroma-js";
 import chroma from 'chroma-js';
 // import DMC from "@/assets/dmc_colors.json";
-import DMC from "@/assets/dmc_colors_ldh.json";
+import DMC from "@/assets/dmc_colors_ldh2.json";
 import chunk from "lodash/chunk";
 import sumBy from "lodash/sumBy";
 import countBy from "lodash/countBy";
@@ -357,11 +365,12 @@ export default {
   mounted() {
     this.numColors2Match = this.initialNum2Match;
     this.maxScreenWidth = this.$refs.container.clientWidth;
+    console.log(DMC)
     DMC.forEach(d => {
       d["color"] = chroma(d.hex);
-      d["dmc_id"] = Number.isInteger(+d.dmc_id) ? +d.dmc_id : d.dmc_id;
-      d["rgb"] = d.color.rgb();
-      d["hsv"] = d.color.hsv();
+    //   // d["dmc_id"] = Number.isInteger(+d.dmc_id) ? +d.dmc_id : d.dmc_id;
+    //   // d["rgb"] = d.color.rgb();
+    //   // d["hsv"] = d.color.hsv();
     })
   },
   beforeDestroy() {
@@ -486,6 +495,7 @@ export default {
           obj["closest_name"] = closest.name;
           obj["closest_dmc_group"] = closest.group;
           obj["closest_dmc_id"] = closest.dmc_id;
+          obj["closest_dmc_similar"] = closest.similar;
           obj["closest_dmc_row"] = closest.dmc_row;
           obj["closest_dmc_col"] = closest.dmc_col;
           obj["closest_score"] = closest.dist;
@@ -506,6 +516,7 @@ export default {
             dmc_col: values[0]["closest_dmc_col"],
             dmc_row: values[0]["closest_dmc_row"],
             dmc_group: values[0]["closest_dmc_group"],
+            dmc_similar: values[0]["closest_dmc_similar"],
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
             dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
@@ -526,6 +537,7 @@ export default {
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
+        console.log(this.matchedColors)
 
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
