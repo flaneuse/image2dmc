@@ -7,7 +7,7 @@
   <div class="accordion" role="tablist" id="file-selection">
     <b-card no-body class="mb-1">
       <b-card-header header-tag="header" class="p-1" role="tab">
-        <b-button block class="btn-light" :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="info">{{ showInputs ? "Hide" : "Show"}} file
+        <b-button block :class="showInputs ? null : 'collapsed'" :aria-expanded="showInputs ? 'true' : 'false'" aria-controls="accordion-inputs" @click="showInputs = !showInputs" variant="secondary">{{ showInputs ? "Hide" : "Change"}} file
           inputs</b-button>
       </b-card-header>
       <b-collapse id="accordion-inputs" v-model="showInputs" accordion="my-accordion" role="tabpanel">
@@ -146,7 +146,7 @@
 
 
     <!-- Result preview -->
-    <div id="result-preview" :class="[matchedColors.length ? 'd-flex flex-column' : 'd-none' ]">
+    <div id="result-preview" :class="[matchedColorsSorted.length ? 'd-flex flex-column' : 'd-none' ]">
       <h3>Matched image</h3>
       <small class="text-muted">Check / uncheck colors to see where they are on the image</small>
 
@@ -164,7 +164,7 @@
       </div>
 
       <b-form-checkbox-group id="checkbox-group" v-model="selectedIDs" name="selectedIDs" class="d-flex flex-wrap" @change="debounceMaskResults">
-        <b-form-checkbox v-for="(color, idx) in matchedColors" :value="color.dmc_id" class="fa-sm mb-1">
+        <b-form-checkbox v-for="(color, idx) in matchedColorsSorted" :value="color.dmc_id" class="fa-sm mb-1">
           <span :style="{ color: color.dmc_hex, background: color.dmc_hex}" class="">&nbsp;&nbsp;&nbsp;&nbsp;</span>
           {{color.dmc_name}} (DMC {{color.dmc_id}}; {{color.pct}})
         </b-form-checkbox>
@@ -258,7 +258,7 @@
           </td>
           <td>
             {{color.score}}
-            <small v-if="color.score > scoreThreshold">
+            <small v-if="color.score > scoreThreshold" :id="'tooltip' + color.dmc_id">
               <b-icon icon="exclamation-circle-fill" variant="warning" class="mx-2"></b-icon>poor match
             </small>
           </td>
@@ -273,6 +273,7 @@
           <td>
             {{color.dmc_row}}
           </td>
+          <b-tooltip :target="'tooltip' + color.dmc_id" triggers="hover click" data-html="true"> {{color.color_tooltip_hue}} <br /> {{color.color_tooltip_sat}}<br /> {{color.color_tooltip_val}}</b-tooltip>
         </tr>
       </tbody>
 
@@ -345,6 +346,11 @@ export default {
     }
   },
   computed: {
+    matchedColorsSorted() {
+      const sorted = _.cloneDeep(this.matchedColors);
+      sorted.sort((a,b) => a.pct > b.pct ? -1 : 1);
+      return(sorted)
+    },
     estimatedTime() {
       const est = this.numColors2Match / this.colorsPerSec;
       if (est < 0.05) {
@@ -365,7 +371,6 @@ export default {
   mounted() {
     this.numColors2Match = this.initialNum2Match;
     this.maxScreenWidth = this.$refs.container.clientWidth;
-    console.log(DMC)
     DMC.forEach(d => {
       d["color"] = chroma(d.hex);
     //   // d["dmc_id"] = Number.isInteger(+d.dmc_id) ? +d.dmc_id : d.dmc_id;
@@ -485,7 +490,7 @@ export default {
           let obj = {};
           const rgba = d.id.split(",")
           obj["color"] = chroma(`rgba(${rgba[0]}, ${rgba[1]}, ${rgba[2]}, ${rgba[3]/255})`);
-          const hsv = obj.color.hsv();
+          obj["hsv"] = obj.color.hsv();
           const closest = this.calcDist(obj.color);
           obj["hex"] = obj.color.hex();
           obj["idx"] = d.idx;
@@ -500,9 +505,9 @@ export default {
           obj["closest_dmc_row"] = closest.dmc_row;
           obj["closest_dmc_col"] = closest.dmc_col;
           obj["closest_score"] = closest.dist;
-          obj["closest_hsv_hdiff"] = closest.hsv[0] - hsv[0];
-          obj["closest_hsv_sdiff"] = closest.hsv[1] - hsv[1];
-          obj["closest_hsv_vdiff"] = closest.hsv[2] - hsv[2];
+          obj["closest_hsv_hdiff"] = closest.hsv[0] - obj.hsv[0];
+          obj["closest_hsv_sdiff"] = closest.hsv[1] - obj.hsv[1];
+          obj["closest_hsv_vdiff"] = closest.hsv[2] - obj.hsv[2];
           resolve(obj)
         }, 100)
       });
@@ -513,17 +518,23 @@ export default {
       Promise.all(this.simplifiedColorArr.map((d, i) => this.calcMatch(d, i))).then((matchedColorArr) => {
         // sum number of occurrences of the DMC color
         this.matchedColors = _(matchedColorArr).groupBy("closest_dmc_id")
-          .map((values, i) => ({
-            values: values,
+          .map((values, i) => {
+            const dmc_hdiff = _.meanBy(values, "closest_hsv_hdiff");
+            const dmc_sdiff = _.meanBy(values, "closest_hsv_sdiff");
+            const dmc_vdiff = _.meanBy(values, "closest_hsv_vdiff");
+            return({
             dmc_id: values[0]["closest_dmc_id"],
             dmc_name: values[0]["closest_name"],
             dmc_col: values[0]["closest_dmc_col"],
             dmc_row: values[0]["closest_dmc_row"],
             dmc_group: values[0]["closest_dmc_group"],
             dmc_similar: values[0]["closest_dmc_similar"],
-            dmc_hdiff: values[0]["closest_hsv_hdiff"],
-            dmc_sdiff: values[0]["closest_hsv_sdiff"],
-            dmc_vdiff: values[0]["closest_hsv_vdiff"],
+            dmc_hdiff: dmc_hdiff,
+            dmc_sdiff: dmc_sdiff,
+            dmc_vdiff: dmc_vdiff,
+            color_tooltip_hue: `${dmc_hdiff < 0 ? "too warm/reddish" : "too cold/blueish"} (${d3.format("0.1f")(dmc_hdiff)})`,
+            color_tooltip_sat: `${dmc_sdiff < 0 ? "too desaturated/dull" : "too saturated/bright"} (${d3.format("0.1%")(dmc_sdiff)})`,
+            color_tooltip_val: `${dmc_vdiff < 0 ? "too dark" : "too light"} (${d3.format("0.1%")(dmc_vdiff)})`,
             dmc_hex: values[0]["closest_hex"],
             dmc_rgb: values[0]["closest_rgb"],
             dmc_hue: Math.round(values[0]["closest_hsv"][0] / 10),
@@ -532,7 +543,8 @@ export default {
             count: sumBy(values, "pixel_count"),
             score: +d3.format("0.2f")(_.meanBy(values, "closest_score")),
             pct: d3.format("0.1%")(sumBy(values, "pixel_count") / this.simplifiedImagePixels.length)
-          }))
+          })
+          })
           .value();
 
         // // pull out matches to preview
@@ -544,7 +556,6 @@ export default {
 
         // sort descendingly by count
         this.matchedColors.sort((a, b) => b.dmc_hue - a.dmc_hue || a.dmc_saturation - b.dmc_saturation);
-        console.log(this.matchedColors)
 
         // plot the results
         this.selectedIDs = this.matchedColors.map(d => d.dmc_id);
